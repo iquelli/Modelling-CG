@@ -1,2 +1,9 @@
 # Figures-CG
-Project for 2023/2024 - Computer Graphics @ IST
+
+## Formatting
+
+With prettier installed globally:
+
+```
+prettier -w **/*.{html,css,js}
+```
