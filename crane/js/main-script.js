@@ -4,8 +4,7 @@ import * as THREE from 'three';
 /* GLOBAL CONSTANTS */
 //////////////////////
 
-
-const BACKGROUND = new THREE.Color(0xcbfeff)
+const BACKGROUND = new THREE.Color(0xcbfeff);
 
 const MATERIAL = Object.freeze({
   base: new THREE.MeshBasicMaterial({ color: '#2f2e32' }),
@@ -25,22 +24,21 @@ const MATERIAL = Object.freeze({
   clawFingerTip: new THREE.MeshBasicMaterial({ color: '#252527' }),
 });
 
-
 // box and tetrhahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
-  
+
 const GEOMETRY = Object.freeze({
   base: { w: 6, h: 2, d: 6 },
   tower: { w: 2, h: 17, d: 2 },
   cab: { w: 4, h: 3, d: 4 },
   apex: { w: 4, h: 5, d: 4 },
-  jib:  { w: 19, h: 2, d: 4 },
+  jib: { w: 19, h: 2, d: 4 },
   counterjib: { w: 11, h: 2, d: 2 },
   counterweight: { w: 4, h: 2, d: 2 },
-  //rearPendant: { r: 0.1, h: 9.5, rx: -Math.PI / 4 }, TODO: CHECK ANGLE
-  //frontPendant: { r: 0.1, h: 16.3, rx: -Math.PI / 4 },
+  rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
+  frontPendant: { r: 0.1, h: 18.5, rz: Math.PI / 2.2 },
   trolley: { w: 3, h: 2, d: 2 },
-  //cable: { r: 0.1, h: 0.1, rx: -Math.PI / 2 }, TODO: this value is changeable
+  cable: { r: 0.5, h: 9 },
 
   clawWrist: { r: 0.5 },
   clawFingerBody: { w: 2, h: 0.2, d: 0.2 },
@@ -63,10 +61,9 @@ const CRANE_AABB_POINTS = {
 };
 */
 
-
 const CAMERA_GEOMETRY = Object.freeze({
   sceneViewAABB: [new THREE.Vector3(-20, -5, -20), new THREE.Vector3(20, 35, 20)],
-  // clawAABB: [new THREE.Vector3(-5, -5, -5), new THREE.Vector3(5, 5, 5)], 
+  // clawAABB: [new THREE.Vector3(-5, -5, -5), new THREE.Vector3(5, 5, 5)],
   orthogonalDistance: 30,
   orthogonalNear: 1,
   orthogonalFar: 1000,
@@ -154,10 +151,10 @@ function createCameras() {
 }
 
 function getVisibleAreaBoundingBox() {
-    return {
-      min: CAMERA_GEOMETRY.sceneViewAABB[0],
-      max: CAMERA_GEOMETRY.sceneViewAABB[1],
-    };
+  return {
+    min: CAMERA_GEOMETRY.sceneViewAABB[0],
+    max: CAMERA_GEOMETRY.sceneViewAABB[1],
+  };
 }
 
 /**
@@ -277,22 +274,72 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-function createCrane(){
-  const crane = createGroup({ parent: scene });
-  createBoxMesh({name:'base', parent:scene});
-  createBoxMesh({name:'tower', y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2, parent:scene});
+function createCrane() {
+  const base = createGroup({ parent: scene });
+  createBoxMesh({ name: 'base', parent: scene });
+  createBoxMesh({ name: 'tower', y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2, parent: scene });
 
-  const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: crane });
-  createBoxMesh({name:'cab', y: GEOMETRY.cab.h / 2 , parent: topGroup})
+  createTop(base);
 }
 
-function createTop(){}
+function createTop(base) {
+  const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: base });
 
-function createTrolley(){}
+  // Center
+  createBoxMesh({ name: 'cab', y: GEOMETRY.cab.h / 2, parent: topGroup });
+  createPyramidMesh({ name: 'apex', y: GEOMETRY.cab.h + GEOMETRY.apex.h / 2, parent: topGroup });
 
-function createClaw(){}
+  // Right side
+  createBoxMesh({
+    name: 'counterjib',
+    x: -(GEOMETRY.cab.w + GEOMETRY.counterjib.w) / 2,
+    y: GEOMETRY.cab.h + GEOMETRY.counterjib.h / 2,
+    parent: topGroup,
+  });
+  createBoxMesh({
+    name: 'counterweight',
+    x: -GEOMETRY.counterjib.w + 1,
+    y: GEOMETRY.counterweight.h,
+    parent: topGroup,
+  });
+  createCylinderMesh({
+    name: 'rearPendant',
+    x: -GEOMETRY.rearPendant.h / 2,
+    y: GEOMETRY.cab.h / 2 + GEOMETRY.apex.h,
+    parent: topGroup,
+  });
 
-2
+  // Left side
+  createBoxMesh({
+    name: 'jib',
+    x: (GEOMETRY.cab.w + GEOMETRY.jib.w) / 2,
+    y: GEOMETRY.cab.h + GEOMETRY.jib.h / 2,
+    parent: topGroup,
+  });
+  createCylinderMesh({
+    name: 'frontPendant',
+    x: GEOMETRY.frontPendant.h / 2,
+    y: GEOMETRY.cab.h / 2 + GEOMETRY.apex.h,
+    parent: topGroup,
+  });
+
+  createTrolley(topGroup);
+}
+
+function createTrolley(topGroup) {
+  // numero q faz - aqui no x: é oq temos de alterar
+  const trolleyGroup = createGroup({
+    x: GEOMETRY.jib.w - 1,
+    y: GEOMETRY.trolley.h,
+    parent: topGroup,
+  });
+  createBoxMesh({ name: 'trolley', parent: trolleyGroup });
+  createCylinderMesh({ name: 'cable', y: -GEOMETRY.cable.h / 2, parent: trolleyGroup });
+}
+
+function createClaw() {}
+
+2;
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
@@ -336,7 +383,6 @@ function init() {
   createScene();
   createCameras();
 
-  
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
@@ -365,7 +411,6 @@ function onResize() {
   }
 }
 
-
 function changeActiveCameraHandleFactory(cameraDescriptor) {
   return (_event, isKeyUp) => {
     if (isKeyUp) {
@@ -376,7 +421,6 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
     activeCamera = cameraDescriptor;
   };
 }
-
 
 ///////////////////////
 /* KEY DOWN CALLBACK */
@@ -389,7 +433,7 @@ const keyHandlers = {
   Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
   Digit5: changeActiveCameraHandleFactory(cameras.perspective),
   Digit5: changeActiveCameraHandleFactory(cameras.mobile),
-}
+};
 
 ///////////////////////
 /* KEY DOWN CALLBACK */
@@ -418,7 +462,6 @@ function onKeyUp(e) {
   }
 
   keyHandlers[code]?.(event, true);
-
 }
 
 ///////////////
@@ -475,6 +518,25 @@ function createBoxMesh({ name, x = 0, y = 0, z = 0, anchor = [0, 0, 0], parent }
 }
 
 /**
+ * Create a Pyramid THREE.Mesh with CylinderGeometry, on the given position and with the scaling
+ * and rotation from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createPyramidMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { w, h, d } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  var geometry = new THREE.CylinderGeometry(0, w / Math.sqrt(2), h, 4);
+
+  const pyramid = new THREE.Mesh(geometry, material);
+  pyramid.position.set(x, y, z);
+  pyramid.rotation.y = Math.PI / 4;
+
+  parent.add(pyramid);
+  return pyramid;
+}
+
+/**
  * Create a THREE.Mesh with CylinderGeometry, on the given position and with the scaling
  * and rotation from the given profile (`name`).
  *
@@ -504,7 +566,5 @@ function buildSymmetricX(builder, parent) {
   return builder(createGroup({ scale: [-1, 1, 1], parent }));
 }
 
-
 init();
 animate();
-
