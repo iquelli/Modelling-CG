@@ -1,0 +1,6 @@
+# Vendor everything but the main scripts
+**/OrbitControls.js linguist-vendored
+**/Stats.js linguist-vendored
+**/VRButton.js linguist-vendored
+**/dat.gui.js linguist-vendored
+**/three.min.js linguist-vendored
