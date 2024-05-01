@@ -43,7 +43,7 @@ const GEOMETRY = Object.freeze({
 
   clawWrist: { r: 0.5 },
   clawFingerBody: { w: 2, h: 0.2, d: 0.2 },
-  clawFingerTip: { w: 0.2, h: 1, d:0.2, rx: -Math.PI / 2 }, // TODO: CREATE PYRAMID
+  clawFingerTip: { w: 0.2, h: 1, d: 0.2, rx: -Math.PI / 2 }, // TODO: CREATE PYRAMID
 });
 
 /*
@@ -284,7 +284,7 @@ function createCrane() {
   });
   const clawGroup = createGroup({});
 
-  createBase(baseGroup)
+  createBase(baseGroup);
   createTop(topGroup);
   createTrolley(trolleyGroup);
   createClaw(clawGroup);
@@ -292,7 +292,11 @@ function createCrane() {
 
 function createBase(baseGroup) {
   createBoxMesh({ name: 'base', parent: baseGroup });
-  createBoxMesh({ name: 'tower', y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2, parent: baseGroup });
+  createBoxMesh({
+    name: 'tower',
+    y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2,
+    parent: baseGroup,
+  });
 }
 
 function createTop(topGroup) {
