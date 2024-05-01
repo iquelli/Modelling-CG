@@ -29,7 +29,7 @@ const MATERIAL = Object.freeze({
 
 const GEOMETRY = Object.freeze({
   base: { w: 6, h: 2, d: 6 },
-  tower: { w: 2, h: 17, d: 2   },
+  tower: { w: 2, h: 17, d: 2 },
   cab: { w: 4, h: 3, d: 4 },
   apex: { w: 4, h: 5, d: 4 },
   jib: { w: 19, h: 2, d: 2 },
