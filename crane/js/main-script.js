@@ -282,7 +282,10 @@ function createCrane() {
     y: GEOMETRY.trolley.h,
     parent: topGroup,
   });
-  const clawGroup = createGroup({});
+  const clawGroup = createGroup({
+    y: -(GEOMETRY.trolley.h / 2 + GEOMETRY.cable.h),
+    parent: trolleyGroup,
+  });
 
   createBase(baseGroup);
   createTop(topGroup);
@@ -341,10 +344,17 @@ function createTop(topGroup) {
 
 function createTrolley(trolleyGroup) {
   createBoxMesh({ name: 'trolley', parent: trolleyGroup });
-  createCylinderMesh({ name: 'cable', y: -GEOMETRY.cable.h / 2, parent: trolleyGroup });
+  createCylinderMesh({
+    name: 'cable',
+    y: -(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2,
+    parent: trolleyGroup,
+  });
 }
 
-function createClaw(clawGroup) {}
+function createClaw(clawGroup) {
+  // Wrist
+  createSphereMesh({ name: 'clawWrist', y: -GEOMETRY.clawWrist.r, parent: clawGroup });
+}
 
 //////////////////////
 /* CHECK COLLISIONS */
@@ -514,6 +524,7 @@ function createBoxMesh({ name, x = 0, y = 0, z = 0, anchor = [0, 0, 0], parent }
   const { w, h, d } = GEOMETRY[name];
   const material = MATERIAL[name];
   const geometry = new THREE.BoxGeometry(w, h, d);
+
   const box = new THREE.Mesh(geometry, material);
   box.position.set(x + (anchor[0] * w) / 2, y + (anchor[1] * h) / 2, z + (anchor[2] * d) / 2);
 
@@ -530,7 +541,7 @@ function createBoxMesh({ name, x = 0, y = 0, z = 0, anchor = [0, 0, 0], parent }
 function createPyramidMesh({ name, x = 0, y = 0, z = 0, parent }) {
   const { w, h, d } = GEOMETRY[name];
   const material = MATERIAL[name];
-  var geometry = new THREE.CylinderGeometry(0, w / Math.sqrt(2), h, 4);
+  const geometry = new THREE.CylinderGeometry(0, w / Math.sqrt(2), h, 4);
 
   const pyramid = new THREE.Mesh(geometry, material);
   pyramid.position.set(x, y, z);
@@ -553,14 +564,32 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
   // allows for smooth edges on small cylinders, while also preventing too
   // many segments on smaller ones
   const radialSegments = THREE.MathUtils.clamp(Math.round(100 * r), 5, 35);
-
   const geometry = new THREE.CylinderGeometry(r, r, h, radialSegments);
+
   const cylinder = new THREE.Mesh(geometry, material);
   cylinder.position.set(x, y, z);
   cylinder.rotation.set(rx, ry, rz);
 
   parent.add(cylinder);
   return cylinder;
+}
+
+/**
+ * Create a THREE.Mesh with SphereGeometry, on the given position and with the scaling
+ * from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createSphereMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { r } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  const geometry = new THREE.SphereGeometry(r);
+
+  const sphere = new THREE.Mesh(geometry, material);
+  sphere.position.set(x, y, z);
+
+  parent.add(sphere);
+  return sphere;
 }
 
 /**
