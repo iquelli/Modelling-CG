@@ -32,7 +32,7 @@ const GEOMETRY = Object.freeze({
   tower: { w: 2, h: 17, d: 2 },
   cab: { w: 4, h: 3, d: 4 },
   apex: { w: 4, h: 5, d: 4 },
-  jib: { w: 19, h: 2, d: 4 },
+  jib: { w: 19, h: 2, d: 2 },
   counterjib: { w: 11, h: 2, d: 2 },
   counterweight: { w: 4, h: 2, d: 2 },
   rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
