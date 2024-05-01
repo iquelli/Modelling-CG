@@ -1,3 +1,5 @@
+'use strict';
+
 import * as THREE from 'three';
 
 //////////////////////
@@ -24,9 +26,8 @@ const MATERIAL = Object.freeze({
   clawFingerTip: new THREE.MeshBasicMaterial({ color: '#252527' }),
 });
 
-// box and tetrhahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
+// box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
-
 const GEOMETRY = Object.freeze({
   base: { w: 6, h: 2, d: 6 },
   tower: { w: 2, h: 17, d: 2 },
@@ -42,7 +43,7 @@ const GEOMETRY = Object.freeze({
 
   clawWrist: { r: 0.5 },
   clawFingerBody: { w: 2, h: 0.2, d: 0.2 },
-  //clawFingerTip: { w: 0.2, h: 1, d:0.2, rx: -Math.PI / 2 }, TODO: CREATE PYRAMID
+  clawFingerTip: { w: 0.2, h: 1, d:0.2, rx: -Math.PI / 2 }, // TODO: CREATE PYRAMID
 });
 
 /*
@@ -63,7 +64,7 @@ const CRANE_AABB_POINTS = {
 
 const CAMERA_GEOMETRY = Object.freeze({
   sceneViewAABB: [new THREE.Vector3(-20, -5, -20), new THREE.Vector3(20, 35, 20)],
-  // clawAABB: [new THREE.Vector3(-5, -5, -5), new THREE.Vector3(5, 5, 5)],
+  clawAABB: [new THREE.Vector3(-5, -5, -5), new THREE.Vector3(5, 5, 5)],
   orthogonalDistance: 30,
   orthogonalNear: 1,
   orthogonalFar: 1000,
@@ -76,6 +77,7 @@ const CAMERA_GEOMETRY = Object.freeze({
 //////////////////////
 /* GLOBAL VARIABLES */
 //////////////////////
+
 var activeCamera, renderer, scene;
 
 const cameras = {
@@ -112,7 +114,7 @@ const cameras = {
     y: CAMERA_GEOMETRY.perspectiveDistance,
     z: CAMERA_GEOMETRY.perspectiveDistance,
   }),
-
+  // mobile perspective projection
   mobile: createPerspectiveCamera({
     x: CAMERA_GEOMETRY.perspectiveDistance,
     y: CAMERA_GEOMETRY.perspectiveDistance,
@@ -125,7 +127,6 @@ const cameras = {
 /////////////////////
 
 function createScene() {
-  'use strict';
   scene = new THREE.Scene();
   scene.add(new THREE.AxesHelper(20));
   scene.background = BACKGROUND;
@@ -255,9 +256,7 @@ function createPerspectiveCamera({ x = 0, y = 0, z = 0 }) {
  * This function is given by the camera descriptor, from the `createOrthogonalCamera`
  * or the `createPerspectiveCamera` functions.
  *
- * Finally,
-
- updates the projection matrix of the camera.
+ * Finally, updates the projection matrix of the camera.
  */
 function refreshCameraParameters({ getCameraParameters, camera }) {
   const parameters = getCameraParameters();
@@ -275,21 +274,33 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 ////////////////////////
 
 function createCrane() {
-  const base = createGroup({ parent: scene });
-  createBoxMesh({ name: 'base', parent: scene });
-  createBoxMesh({ name: 'tower', y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2, parent: scene });
+  const baseGroup = createGroup({ parent: scene });
+  const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: baseGroup });
+  // TODO: numero q faz - aqui no x: é oq temos de alterar
+  const trolleyGroup = createGroup({
+    x: GEOMETRY.jib.w - 1,
+    y: GEOMETRY.trolley.h,
+    parent: topGroup,
+  });
+  const clawGroup = createGroup({});
 
-  createTop(base);
+  createBase(baseGroup)
+  createTop(topGroup);
+  createTrolley(trolleyGroup);
+  createClaw(clawGroup);
 }
 
-function createTop(base) {
-  const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: base });
+function createBase(baseGroup) {
+  createBoxMesh({ name: 'base', parent: baseGroup });
+  createBoxMesh({ name: 'tower', y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h / 2, parent: baseGroup });
+}
 
+function createTop(topGroup) {
   // Center
   createBoxMesh({ name: 'cab', y: GEOMETRY.cab.h / 2, parent: topGroup });
   createPyramidMesh({ name: 'apex', y: GEOMETRY.cab.h + GEOMETRY.apex.h / 2, parent: topGroup });
 
-  // Right side
+  // Left side
   createBoxMesh({
     name: 'counterjib',
     x: -(GEOMETRY.cab.w + GEOMETRY.counterjib.w) / 2,
@@ -309,7 +320,7 @@ function createTop(base) {
     parent: topGroup,
   });
 
-  // Left side
+  // Right side
   createBoxMesh({
     name: 'jib',
     x: (GEOMETRY.cab.w + GEOMETRY.jib.w) / 2,
@@ -322,58 +333,46 @@ function createTop(base) {
     y: GEOMETRY.cab.h / 2 + GEOMETRY.apex.h,
     parent: topGroup,
   });
-
-  createTrolley(topGroup);
 }
 
-function createTrolley(topGroup) {
-  // numero q faz - aqui no x: é oq temos de alterar
-  const trolleyGroup = createGroup({
-    x: GEOMETRY.jib.w - 1,
-    y: GEOMETRY.trolley.h,
-    parent: topGroup,
-  });
+function createTrolley(trolleyGroup) {
   createBoxMesh({ name: 'trolley', parent: trolleyGroup });
   createCylinderMesh({ name: 'cable', y: -GEOMETRY.cable.h / 2, parent: trolleyGroup });
 }
 
-function createClaw() {}
+function createClaw(clawGroup) {}
 
-2;
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
-function checkCollisions() {
-  'use strict';
-}
+
+function checkCollisions() {}
 
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
-function handleCollisions() {
-  'use strict';
-}
+
+function handleCollisions() {}
 
 ////////////
 /* UPDATE */
 ////////////
-function update() {
-  'use strict';
-}
+
+function update() {}
 
 /////////////
 /* DISPLAY */
 /////////////
+
 function render() {
-  'use strict';
   renderer.render(scene, activeCamera.camera);
 }
 
 ////////////////////////////////
 /* INITIALIZE ANIMATION CYCLE */
 ////////////////////////////////
+
 function init() {
-  'use strict';
   renderer = new THREE.WebGLRenderer({
     antialias: true,
   });
@@ -392,9 +391,8 @@ function init() {
 /////////////////////
 /* ANIMATION CYCLE */
 /////////////////////
-function animate() {
-  'use strict';
 
+function animate() {
   render();
   requestAnimationFrame(animate);
 }
@@ -402,14 +400,27 @@ function animate() {
 ////////////////////////////
 /* RESIZE WINDOW CALLBACK */
 ////////////////////////////
+
 function onResize() {
-  'use strict';
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   if (window.innerHeight > 0 && window.innerWidth > 0) {
     refreshCameraParameters(activeCamera);
   }
 }
+
+//////////////////
+/* KEY HANDLERS */
+//////////////////
+
+const keyHandlers = {
+  Digit1: changeActiveCameraHandleFactory(cameras.front),
+  Digit2: changeActiveCameraHandleFactory(cameras.side),
+  Digit3: changeActiveCameraHandleFactory(cameras.top),
+  Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
+  Digit5: changeActiveCameraHandleFactory(cameras.perspective),
+  Digit6: changeActiveCameraHandleFactory(cameras.mobile),
+};
 
 function changeActiveCameraHandleFactory(cameraDescriptor) {
   return (_event, isKeyUp) => {
@@ -426,18 +437,6 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 /* KEY DOWN CALLBACK */
 ///////////////////////
 
-const keyHandlers = {
-  Digit1: changeActiveCameraHandleFactory(cameras.front),
-  Digit2: changeActiveCameraHandleFactory(cameras.side),
-  Digit3: changeActiveCameraHandleFactory(cameras.top),
-  Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
-  Digit5: changeActiveCameraHandleFactory(cameras.perspective),
-  Digit5: changeActiveCameraHandleFactory(cameras.mobile),
-};
-
-///////////////////////
-/* KEY DOWN CALLBACK */
-///////////////////////
 function onKeyDown(e) {
   let { code } = event;
 
@@ -452,8 +451,8 @@ function onKeyDown(e) {
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
+
 function onKeyUp(e) {
-  'use strict';
   let { code } = event;
 
   // Treat numpad digits like the number row
@@ -467,6 +466,7 @@ function onKeyUp(e) {
 ///////////////
 /* UTILITIES */
 ///////////////
+
 /**
  * Create a THREE.Group on the given position and with the given scale.
  *
@@ -546,7 +546,8 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
   const { r, h, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
   const material = MATERIAL[name];
 
-  // allows for smooth edges on small cylinders, while also preventing too many segments on smaller ones
+  // allows for smooth edges on small cylinders, while also preventing too
+  // many segments on smaller ones
   const radialSegments = THREE.MathUtils.clamp(Math.round(100 * r), 5, 35);
 
   const geometry = new THREE.CylinderGeometry(r, r, h, radialSegments);
@@ -567,4 +568,4 @@ function buildSymmetricX(builder, parent) {
 }
 
 init();
-animate();
+requestAnimationFrame(animate);

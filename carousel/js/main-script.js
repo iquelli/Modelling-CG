@@ -1,8 +1,10 @@
+'use strict';
+
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
-import * as Stats from 'three/addons/libs/stats.module.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+//////////////////////
+/* GLOBAL CONSTANTS */
+//////////////////////
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -11,9 +13,8 @@ import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 /////////////////////
 /* CREATE SCENE(S) */
 /////////////////////
-function createScene() {
-  'use strict';
-}
+
+function createScene() {}
 
 //////////////////////
 /* CREATE CAMERA(S) */
@@ -30,65 +31,56 @@ function createScene() {
 //////////////////////
 /* CHECK COLLISIONS */
 //////////////////////
-function checkCollisions() {
-  'use strict';
-}
+
+function checkCollisions() {}
 
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
-function handleCollisions() {
-  'use strict';
-}
+
+function handleCollisions() {}
 
 ////////////
 /* UPDATE */
 ////////////
-function update() {
-  'use strict';
-}
+
+function update() {}
 
 /////////////
 /* DISPLAY */
 /////////////
-function render() {
-  'use strict';
-}
+
+function render() {}
 
 ////////////////////////////////
 /* INITIALIZE ANIMATION CYCLE */
 ////////////////////////////////
-function init() {
-  'use strict';
-}
+
+function init() {}
 
 /////////////////////
 /* ANIMATION CYCLE */
 /////////////////////
-function animate() {
-  'use strict';
-}
+
+function animate() {}
 
 ////////////////////////////
 /* RESIZE WINDOW CALLBACK */
 ////////////////////////////
-function onResize() {
-  'use strict';
-}
+
+function onResize() {}
 
 ///////////////////////
 /* KEY DOWN CALLBACK */
 ///////////////////////
-function onKeyDown(e) {
-  'use strict';
-}
+
+function onKeyDown(e) {}
 
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
-function onKeyUp(e) {
-  'use strict';
-}
+
+function onKeyUp(e) {}
 
 init();
-animate();
+requestAnimationFrame(animate);
