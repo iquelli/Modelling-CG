@@ -32,21 +32,21 @@ const GEOMETRY = Object.freeze({
   base: { w: 6, h: 2, d: 6 },
   tower: { w: 2, h: 17, d: 2 },
   cab: { w: 4, h: 3, d: 4 },
-  apex: { w: 4, h: 5, d: 4 },
+  apex: { l: 4, h: 5, ry: Math.PI / 4 },
   jib: { w: 19, h: 2, d: 2 },
   counterjib: { w: 11, h: 2, d: 2 },
   counterweight: { w: 4, h: 2, d: 2 },
   rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
   frontPendant: { r: 0.1, h: 18.5, rz: Math.PI / 2.2 },
   trolley: { w: 3, h: 2, d: 2 },
-  cable: { r: 0.5, h: 9 },
+  cable: { r: 0.3, h: 9 },
 
   clawWrist: { r: 0.5 },
-  clawFingerBody: { w: 2, h: 0.2, d: 0.2 },
-  clawFingerTip: { w: 0.2, h: 1, d: 0.2, rx: -Math.PI / 2 }, // TODO: CREATE PYRAMID
+  clawFingerBody: { w: 1.5, h: 0.2, d: 0.2 },
+  clawFingerTip: { l: 0.2, h: 1, rz: -Math.PI / 2 },
 });
 
-/*
+/* TODO
 // absolute coordinates
 const CRANE_AABB_POINTS = {
   min: new THREE.Vector3(
@@ -273,6 +273,18 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
+/* TODO
+// Create a geometry for the floor (a plane)
+function createFloor(){
+  const floorGeometry = new THREE.PlaneGeometry(200, 200); 
+  const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xabababab, side: THREE.DoubleSide }); // Change color as needed
+  const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
+  floorMesh.rotation.x = -Math.PI / 2; // Rotate 90 degrees around the X-axis to make it horizontal
+  floorMesh.position.set(0, 0, 0); 
+  scene.add(floorMesh);
+}
+*/
+
 function createCrane() {
   const baseGroup = createGroup({ parent: scene });
   const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: baseGroup });
@@ -283,7 +295,7 @@ function createCrane() {
     parent: topGroup,
   });
   const clawGroup = createGroup({
-    y: -(GEOMETRY.trolley.h / 2 + GEOMETRY.cable.h),
+    y: -(GEOMETRY.trolley.h / 2 + GEOMETRY.cable.h + GEOMETRY.clawWrist.r),
     parent: trolleyGroup,
   });
 
@@ -353,7 +365,35 @@ function createTrolley(trolleyGroup) {
 
 function createClaw(clawGroup) {
   // Wrist
-  createSphereMesh({ name: 'clawWrist', y: -GEOMETRY.clawWrist.r, parent: clawGroup });
+  createSphereMesh({ name: 'clawWrist', parent: clawGroup });
+
+  // Fingers
+  createFinger(clawGroup, 0); // Right finger
+  createFinger(clawGroup, Math.PI); // Left Finger
+  createFinger(clawGroup, Math.PI / 2); // Back Finger
+  createFinger(clawGroup, -Math.PI / 2); // Front Finger
+}
+
+function createFinger(clawGroup, rot) {
+  const fingerBodyGroup = createGroup({
+    parent: clawGroup,
+  });
+  createBoxMesh({
+    name: 'clawFingerBody',
+    x: GEOMETRY.clawWrist.r + GEOMETRY.clawFingerBody.w / 2,
+    parent: fingerBodyGroup,
+  });
+  const fingerTipGroup = createGroup({
+    x: GEOMETRY.clawWrist.r + GEOMETRY.clawFingerBody.w,
+    parent: fingerBodyGroup,
+  });
+  createPyramidMesh({
+    name: 'clawFingerTip',
+    x: GEOMETRY.clawFingerTip.h / 2,
+    parent: fingerTipGroup,
+  });
+  fingerTipGroup.rotation.set(0, 0, -Math.PI / 3);
+  fingerBodyGroup.rotation.set(0, rot, -Math.PI / 4);
 }
 
 //////////////////////
@@ -500,33 +540,20 @@ function createGroup({ x = 0, y = 0, z = 0, scale = [1, 1, 1], parent }) {
   return group;
 }
 
-/*
-// Create a geometry for the floor (a plane)
-function createFloor(){
-  const floorGeometry = new THREE.PlaneGeometry(200, 200); 
-  const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xabababab, side: THREE.DoubleSide }); // Change color as needed
-  const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
-  floorMesh.rotation.x = -Math.PI / 2; // Rotate 90 degrees around the X-axis to make it horizontal
-  floorMesh.position.set(0, 0, 0); 
-  scene.add(floorMesh);
-}
-*/
-
 /**
  * Create a THREE.Mesh with BoxGeometry, on the given position and with the scaling
  * from the given profile (`name`).
- * Additionally, an anchor point can be set using an array of length 3, with values
- * of -1, 0 or 1, that will be used as the origin point when scaling.
  *
  * Automatically adds the created Mesh to the given parent.
  */
-function createBoxMesh({ name, x = 0, y = 0, z = 0, anchor = [0, 0, 0], parent }) {
-  const { w, h, d } = GEOMETRY[name];
+function createBoxMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { w, h, d, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
   const material = MATERIAL[name];
   const geometry = new THREE.BoxGeometry(w, h, d);
 
   const box = new THREE.Mesh(geometry, material);
-  box.position.set(x + (anchor[0] * w) / 2, y + (anchor[1] * h) / 2, z + (anchor[2] * d) / 2);
+  box.position.set(x, y, z);
+  box.rotation.set(rx, ry, rz);
 
   parent.add(box);
   return box;
@@ -539,13 +566,13 @@ function createBoxMesh({ name, x = 0, y = 0, z = 0, anchor = [0, 0, 0], parent }
  * Automatically adds the created Mesh to the given parent.
  */
 function createPyramidMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { w, h, d } = GEOMETRY[name];
+  const { l, h, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
   const material = MATERIAL[name];
-  const geometry = new THREE.CylinderGeometry(0, w / Math.sqrt(2), h, 4);
+  const geometry = new THREE.CylinderGeometry(0, l / Math.sqrt(2), h, 4);
 
   const pyramid = new THREE.Mesh(geometry, material);
   pyramid.position.set(x, y, z);
-  pyramid.rotation.y = Math.PI / 4;
+  pyramid.rotation.set(rx, ry, rz);
 
   parent.add(pyramid);
   return pyramid;
