@@ -1,12 +1,6 @@
-name: Run prettier on Push
+name: Run Prettier on Push
 
-on:
-  push:
-    branches:
-      - master
-
-permissions:
-  contents: write
+on: push
 
 jobs:
   prettier:
@@ -20,7 +14,7 @@ jobs:
         uses: creyD/prettier_action@v4.3
         with:
           prettier_options: --write **/*.{html,css,js}
-          commit_message: "style: run formatter"
-          only_changed: true
+          commit_message: "Run formatter"
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
