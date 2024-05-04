@@ -74,11 +74,78 @@ const CAMERA_GEOMETRY = Object.freeze({
   perspectiveFar: 1000,
 });
 
+// degrees of freedom for each profile
+const DEGREES_OF_FREEDOM = Object.freeze({
+  top: {
+    applier: rotateDynamicPart,
+    min: -Math.PI,
+    max: Math.PI,
+    axis: 'y',
+  },
+  trolley: {
+    applier: translateDynamicPart,
+    min: GEOMETRY.cab.w / 2 + GEOMETRY.trolley.w / 2,
+    max: GEOMETRY.jib.w - 1,
+    axis: 'x',
+  },
+  cable: {
+    applier: resizeDynamicPart,
+    min: 0,
+    max: 0,
+    axis: 'y',
+  },
+  claw: {
+    applier: translateDynamicPart,
+    min: 0,
+    max: 0,
+    axis: 'y',
+  },
+  finger: {
+    applier: rotateDynamicParts,
+    min: 0,
+    max: Math.PI / 4,
+    axis: 'z',
+  },
+});
+
+const CRANE_DYNAMIC_PARTS = Object.freeze([
+  { part: 'top', profile: 'top' },
+  { part: 'trolley', profile: 'trolley' },
+  { part: 'cable', profile: 'cable' },
+  { part: 'claw', profile: 'claw' },
+  { part: 'fingers', profile: 'finger' },
+]);
+
+const MOVEMENT_FLAGS_VECTORS = Object.freeze({
+  xPositive: new THREE.Vector3(1, 0, 0),
+  xNegative: new THREE.Vector3(-1, 0, 0),
+  yPositive: new THREE.Vector3(0, 1, 0),
+  yNegative: new THREE.Vector3(0, -1, 0),
+  zPositive: new THREE.Vector3(0, 0, 1),
+  zNegative: new THREE.Vector3(0, 0, -1),
+});
+
+const MOVEMENT_TIME = 2000; // miliseconds
+const DELTAS = Object.freeze(
+  Object.fromEntries([
+    // automatically generate DELTAs for the parts with defined degrees of freedom
+    ...Object.entries(DEGREES_OF_FREEDOM).map(([key, { min, max }]) => {
+      const val = (max - min) / MOVEMENT_TIME;
+
+      return [key, val];
+    }),
+  ])
+);
+
 //////////////////////
 /* GLOBAL VARIABLES */
 //////////////////////
 
-var activeCamera, renderer, scene;
+let renderer, scene;
+let activeCamera;
+let prevTimeStamp;
+
+const dynamicElements = {};
 
 const cameras = {
   // front view
@@ -299,6 +366,10 @@ function createCrane() {
     parent: trolleyGroup,
   });
 
+  dynamicElements.top = topGroup;
+  dynamicElements.trolley = trolleyGroup;
+  dynamicElements.claw = clawGroup;
+
   createBase(baseGroup);
   createTop(topGroup);
   createTrolley(trolleyGroup);
@@ -368,6 +439,7 @@ function createClaw(clawGroup) {
   createSphereMesh({ name: 'clawWrist', parent: clawGroup });
 
   // Fingers
+  dynamicElements.fingers = [];
   createFinger(clawGroup, 0); // Right finger
   createFinger(clawGroup, Math.PI); // Left Finger
   createFinger(clawGroup, Math.PI / 2); // Back Finger
@@ -394,6 +466,7 @@ function createFinger(clawGroup, rot) {
   });
   fingerTipGroup.rotation.set(0, 0, -Math.PI / 3);
   fingerBodyGroup.rotation.set(0, rot, -Math.PI / 4);
+  dynamicElements.fingers.push(fingerBodyGroup);
 }
 
 //////////////////////
@@ -412,7 +485,79 @@ function handleCollisions() {}
 /* UPDATE */
 ////////////
 
-function update() {}
+function update(timeDelta) {
+  CRANE_DYNAMIC_PARTS.forEach((part) => DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part));
+}
+
+function rotateDynamicParts(timeDelta, { part, profile }) {
+  const parts = dynamicElements[part];
+  if (!parts.userData?.movementFlags) {
+    return;
+  }
+
+  const props = DEGREES_OF_FREEDOM[profile];
+  const delta = deltaSupplier({ profile, parts, timeDelta });
+  parts.forEach((part) => {
+    rotateGroup(part, props, delta);
+  });
+}
+
+function rotateDynamicPart(timeDelta, { part, profile }) {
+  const group = dynamicElements[part];
+  if (!group.userData?.movementFlags) {
+    return;
+  }
+
+  const props = DEGREES_OF_FREEDOM[profile];
+  const delta = deltaSupplier({ profile, group, timeDelta });
+  rotateGroup(group, props, delta);
+}
+
+function rotateGroup(group, props, delta) {
+  group.rotation.fromArray(
+    ['x', 'y', 'z'].map((axis) => {
+      const newValue = group.rotation[axis] + delta[axis];
+      if (props?.axis === axis) {
+        return THREE.MathUtils.clamp(newValue, props.min, props.max);
+      }
+      return newValue;
+    })
+  );
+}
+
+function translateDynamicPart(timeDelta, { part, profile }) {
+  const group = dynamicElements[part];
+  if (!group.userData?.movementFlags) {
+    return;
+  }
+
+  const props = DEGREES_OF_FREEDOM[profile];
+  const delta = deltaSupplier({ profile, group, timeDelta });
+
+  group.position.fromArray(
+    ['x', 'y', 'z'].map((axis) => {
+      const newValue = group.position[axis] + delta[axis];
+      if (props?.axis === axis) {
+        return THREE.MathUtils.clamp(newValue, props.min, props.max);
+      }
+      return newValue;
+    })
+  );
+}
+
+function resizeDynamicPart(timeDelta, { part, profile }) {
+  // TODO: used for resizing the cable as it goes up
+}
+
+function deltaSupplier({ group, profile, timeDelta }) {
+  return Object.entries(group?.userData?.movementFlags || {})
+    .filter(([_flagKey, flagValue]) => flagValue)
+    .reduce((vec, [flagKey, _flagValue]) => {
+      return vec.add(MOVEMENT_FLAGS_VECTORS[flagKey]);
+    }, new THREE.Vector3())
+    .normalize()
+    .multiplyScalar(DELTAS[profile] * timeDelta);
+}
 
 /////////////
 /* DISPLAY */
@@ -438,16 +583,19 @@ function init() {
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
-
-  render();
+  window.addEventListener('resize', onResize);
 }
 
 /////////////////////
 /* ANIMATION CYCLE */
 /////////////////////
 
-function animate() {
+function animate(timestamp) {
+  const timeDelta = timestamp - prevTimeStamp;
+
+  update(timeDelta);
   render();
+  prevTimeStamp = timestamp;
   requestAnimationFrame(animate);
 }
 
@@ -468,12 +616,28 @@ function onResize() {
 //////////////////
 
 const keyHandlers = {
+  // Cameras
   Digit1: changeActiveCameraHandleFactory(cameras.front),
   Digit2: changeActiveCameraHandleFactory(cameras.side),
   Digit3: changeActiveCameraHandleFactory(cameras.top),
   Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
   Digit5: changeActiveCameraHandleFactory(cameras.perspective),
   Digit6: changeActiveCameraHandleFactory(cameras.mobile),
+
+  // Rotations and translations
+
+  // top
+  KeyQ: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yPositive' }),
+  KeyA: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yNegative' }),
+  // trolley
+  KeyW: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xPositive' }),
+  KeyS: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xNegative' }),
+  // cable and claw (TODO: still needs to be implemented)
+  KeyE: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yPositive' }),
+  KeyD: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yNegative' }),
+  // fingers (TODO: fix this not working)
+  KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
+  KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
 };
 
 function changeActiveCameraHandleFactory(cameraDescriptor) {
@@ -484,6 +648,22 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 
     refreshCameraParameters(cameraDescriptor);
     activeCamera = cameraDescriptor;
+  };
+}
+
+function transformDynamicPartHandleFactory({ parts, flag }) {
+  return (event, isKeyUp) => {
+    if (event.repeat) {
+      // ignore holding down keys
+      return;
+    }
+
+    parts.forEach((part) => {
+      const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
+      const movementFlags = userData.movementFlags || (userData.movementFlags = {});
+
+      movementFlags[flag] = !isKeyUp;
+    });
   };
 }
 
@@ -619,13 +799,6 @@ function createSphereMesh({ name, x = 0, y = 0, z = 0, parent }) {
   return sphere;
 }
 
-/**
- * Wrapper to `createGroup` that creates a group with a
- * symmetry on the X axis.
- */
-function buildSymmetricX(builder, parent) {
-  return builder(createGroup({ scale: [-1, 1, 1], parent }));
-}
-
+// main: Start everything
 init();
 requestAnimationFrame(animate);
