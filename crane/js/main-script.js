@@ -28,7 +28,7 @@ const MATERIAL = Object.freeze({
 
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
-const GEOMETRY = Object.freeze({
+const GEOMETRY = {
   base: { w: 6, h: 2, d: 6 },
   tower: { w: 2, h: 17, d: 2 },
   cab: { w: 4, h: 3, d: 4 },
@@ -44,7 +44,7 @@ const GEOMETRY = Object.freeze({
   clawWrist: { r: 0.5 },
   clawFingerBody: { w: 1.5, h: 0.2, d: 0.2 },
   clawFingerTip: { l: 0.2, h: 1, rz: -Math.PI / 2 },
-});
+};
 
 /* TODO
 // absolute coordinates
@@ -89,21 +89,21 @@ const DEGREES_OF_FREEDOM = Object.freeze({
     axis: 'x',
   },
   cable: {
-    applier: resizeDynamicPart,
+    applier: resizeCable,
     min: 0,
-    max: 0,
+    max: GEOMETRY.cable.h,
     axis: 'y',
   },
   claw: {
     applier: translateDynamicPart,
-    min: 0,
-    max: 0,
+    min: -(GEOMETRY.trolley.h / 2 + GEOMETRY.cable.h + GEOMETRY.clawWrist.r),
+    max: -(GEOMETRY.trolley.h / 2 + GEOMETRY.clawWrist.r),
     axis: 'y',
   },
   finger: {
     applier: rotateDynamicParts,
-    min: 0,
-    max: Math.PI / 4,
+    min: -Math.PI / 4,
+    max: 0,
     axis: 'z',
   },
 });
@@ -343,11 +343,11 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* TODO
 // Create a geometry for the floor (a plane)
 function createFloor(){
-  const floorGeometry = new THREE.PlaneGeometry(200, 200); 
+  const floorGeometry = new THREE.PlaneGeometry(200, 200);
   const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xabababab, side: THREE.DoubleSide }); // Change color as needed
   const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
   floorMesh.rotation.x = -Math.PI / 2; // Rotate 90 degrees around the X-axis to make it horizontal
-  floorMesh.position.set(0, 0, 0); 
+  floorMesh.position.set(0, 0, 0);
   scene.add(floorMesh);
 }
 */
@@ -355,7 +355,6 @@ function createFloor(){
 function createCrane() {
   const baseGroup = createGroup({ parent: scene });
   const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: baseGroup });
-  // TODO: numero q faz - aqui no x: é oq temos de alterar
   const trolleyGroup = createGroup({
     x: GEOMETRY.jib.w - 1,
     y: GEOMETRY.trolley.h,
@@ -427,7 +426,7 @@ function createTop(topGroup) {
 
 function createTrolley(trolleyGroup) {
   createBoxMesh({ name: 'trolley', parent: trolleyGroup });
-  createCylinderMesh({
+  dynamicElements.cable = createCylinderMesh({
     name: 'cable',
     y: -(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2,
     parent: trolleyGroup,
@@ -490,14 +489,14 @@ function update(timeDelta) {
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
-  const parts = dynamicElements[part];
-  if (!parts.userData?.movementFlags) {
+  const group = dynamicElements[part];
+  if (!group.userData?.movementFlags) {
     return;
   }
 
   const props = DEGREES_OF_FREEDOM[profile];
-  const delta = deltaSupplier({ profile, parts, timeDelta });
-  parts.forEach((part) => {
+  const delta = deltaSupplier({ profile, group, timeDelta });
+  group.forEach((part) => {
     rotateGroup(part, props, delta);
   });
 }
@@ -545,11 +544,21 @@ function translateDynamicPart(timeDelta, { part, profile }) {
   );
 }
 
-function resizeDynamicPart(timeDelta, { part, profile }) {
-  // TODO: used for resizing the cable as it goes up
+function resizeCable(timeDelta, { part, profile }) {
+  var group = dynamicElements[part];
+  if (!group.userData?.movementFlags) {
+    return;
+  }
+
+  const props = DEGREES_OF_FREEDOM[profile];
+  const delta = deltaSupplier({ profile, group, timeDelta });
+
+  GEOMETRY.cable.h = THREE.MathUtils.clamp(GEOMETRY.cable.h - delta['y'], props.min, props.max);
+  group.position.setY(-(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2);
+  group.scale.set(1, GEOMETRY.cable.h / 9); // 9 is the default length of the cable
 }
 
-function deltaSupplier({ group, profile, timeDelta }) {
+function deltaSupplier({ profile, group, timeDelta }) {
   return Object.entries(group?.userData?.movementFlags || {})
     .filter(([_flagKey, flagValue]) => flagValue)
     .reduce((vec, [flagKey, _flagValue]) => {
@@ -632,10 +641,10 @@ const keyHandlers = {
   // trolley
   KeyW: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xPositive' }),
   KeyS: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xNegative' }),
-  // cable and claw (TODO: still needs to be implemented)
+  // cable and claw
   KeyE: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yPositive' }),
   KeyD: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yNegative' }),
-  // fingers (TODO: fix this not working)
+  // fingers
   KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
   KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
 };
