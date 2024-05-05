@@ -24,6 +24,16 @@ const MATERIAL = Object.freeze({
   clawWrist: new THREE.MeshBasicMaterial({ color: '#252527' }),
   clawFingerBody: new THREE.MeshBasicMaterial({ color: '#252527' }),
   clawFingerTip: new THREE.MeshBasicMaterial({ color: '#252527' }),
+
+  containerFloor: new THREE.MeshBasicMaterial({ color: '#FF00FF' }),
+  smallContainerWall: new THREE.MeshBasicMaterial({ color: '#FF0000' }),
+  bigContainerWall: new THREE.MeshBasicMaterial({ color: '#FF0000' }),
+
+  object1: new THREE.MeshBasicMaterial({ color: '#008000' }),
+  object2: new THREE.MeshBasicMaterial({ color: '#000080' }),
+  object3: new THREE.MeshBasicMaterial({ color: '#800080' }),
+  object4: new THREE.MeshBasicMaterial({ color: '#00FFFF' }),
+  object5: new THREE.MeshBasicMaterial({ color: '#FF69B4' }),
 });
 
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
@@ -44,6 +54,16 @@ const GEOMETRY = {
   clawWrist: { r: 0.5 },
   clawFingerBody: { w: 1.5, h: 0.2, d: 0.2 },
   clawFingerTip: { l: 0.2, h: 1, rz: -Math.PI / 2 },
+
+  containerFloor: { w: 10, h: 0.2, d: 6 },
+  smallContainerWall: { w: 0.2, h: 7, d: 6 },
+  bigContainerWall: { w: 10, h: 7, d: 0.2 },
+
+  object1: { w: 2, h: 3, d: 2 },
+  object2: { r: 1.5 },
+  object3: { r: 2 },
+  object4: { r: 1.75 },
+  object5: { r: 1 },
 };
 
 /* TODO
@@ -200,8 +220,8 @@ function createScene() {
 
   //createFloor();
   createCrane();
-  //createContainer()
-  //createCargo();
+  createContainer();
+  createCargo();
 }
 
 //////////////////////
@@ -353,7 +373,7 @@ function createFloor(){
 */
 
 function createCrane() {
-  const baseGroup = createGroup({ parent: scene });
+  const baseGroup = createGroup({ y: GEOMETRY.base.h / 2, parent: scene });
   const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: baseGroup });
   const trolleyGroup = createGroup({
     x: GEOMETRY.jib.w - 1,
@@ -466,6 +486,60 @@ function createFinger(clawGroup, rot) {
   fingerTipGroup.rotation.set(0, 0, -Math.PI / 3);
   fingerBodyGroup.rotation.set(0, rot, -Math.PI / 4);
   dynamicElements.fingers.push(fingerBodyGroup);
+}
+
+function createContainer() {
+  const containerGroup = createGroup({ x: 8, z: 8, parent: scene });
+  createBoxMesh({
+    name: 'containerFloor',
+    y: GEOMETRY.containerFloor.h / 2,
+    parent: containerGroup,
+  });
+  createBoxMesh({
+    name: 'smallContainerWall',
+    x: GEOMETRY.containerFloor.w / 2,
+    y: GEOMETRY.smallContainerWall.h / 2,
+    parent: containerGroup,
+  });
+  createBoxMesh({
+    name: 'smallContainerWall',
+    x: -GEOMETRY.containerFloor.w / 2,
+    y: GEOMETRY.smallContainerWall.h / 2,
+    parent: containerGroup,
+  });
+  createBoxMesh({
+    name: 'bigContainerWall',
+    y: GEOMETRY.smallContainerWall.h / 2,
+    z: -GEOMETRY.containerFloor.d / 2,
+    parent: containerGroup,
+  });
+  createBoxMesh({
+    name: 'bigContainerWall',
+    y: GEOMETRY.smallContainerWall.h / 2,
+    z: +GEOMETRY.containerFloor.d / 2,
+    parent: containerGroup,
+  });
+}
+
+function createCargo() {
+  const cargoGroup = createGroup({ parent: scene });
+  createBoxMesh({ name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5, parent: cargoGroup });
+  createDodecahedronMesh({
+    name: 'object2',
+    x: 16,
+    y: GEOMETRY.object2.r,
+    z: -5,
+    parent: cargoGroup,
+  });
+  createIcosahedronMesh({ name: 'object3', y: GEOMETRY.object3.r, z: -10, parent: cargoGroup });
+  createTorusMesh({ name: 'object4', x: 10, y: GEOMETRY.object4.r / 2, z: 15, parent: cargoGroup });
+  createTorusKnotMesh({
+    name: 'object5',
+    x: -13,
+    y: GEOMETRY.object5.r / 2,
+    z: 12,
+    parent: cargoGroup,
+  });
 }
 
 //////////////////////
@@ -806,6 +880,78 @@ function createSphereMesh({ name, x = 0, y = 0, z = 0, parent }) {
 
   parent.add(sphere);
   return sphere;
+}
+
+/**
+ * Create a THREE.Mesh with DodecahedronGeometry, on the given position and with the scaling
+ * from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createDodecahedronMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { r } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  const geometry = new THREE.DodecahedronGeometry(r);
+
+  const dodecahedron = new THREE.Mesh(geometry, material);
+  dodecahedron.position.set(x, y, z);
+
+  parent.add(dodecahedron);
+  return dodecahedron;
+}
+
+/**
+ * Create a THREE.Mesh with IcosahedronGeometry, on the given position and with the scaling
+ * from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createIcosahedronMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { r } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  const geometry = new THREE.IcosahedronGeometry(r);
+
+  const icosahedron = new THREE.Mesh(geometry, material);
+  icosahedron.position.set(x, y, z);
+
+  parent.add(icosahedron);
+  return icosahedron;
+}
+
+/**
+ * Create a THREE.Mesh with TorusGeometry, on the given position and with the scaling
+ * from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createTorusMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { r } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  const geometry = new THREE.TorusGeometry(r);
+
+  const torus = new THREE.Mesh(geometry, material);
+  torus.position.set(x, y, z);
+
+  parent.add(torus);
+  return torus;
+}
+
+/**
+ * Create a THREE.Mesh with TorusKnotGeometry, on the given position and with the scaling
+ * from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
+function createTorusKnotMesh({ name, x = 0, y = 0, z = 0, parent }) {
+  const { r } = GEOMETRY[name];
+  const material = MATERIAL[name];
+  const geometry = new THREE.TorusKnotGeometry(r);
+
+  const torusKnot = new THREE.Mesh(geometry, material);
+  torusKnot.position.set(x, y, z);
+
+  parent.add(torusKnot);
+  return torusKnot;
 }
 
 // main: Start everything
