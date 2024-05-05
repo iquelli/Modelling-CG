@@ -532,11 +532,11 @@ function createCargo() {
     parent: cargoGroup,
   });
   createIcosahedronMesh({ name: 'object3', y: GEOMETRY.object3.r, z: -10, parent: cargoGroup });
-  createTorusMesh({ name: 'object4', x: 10, y: GEOMETRY.object4.r / 2, z: 15, parent: cargoGroup });
+  createTorusMesh({ name: 'object4', x: 10, y: GEOMETRY.object4.r, z: 15, parent: cargoGroup });
   createTorusKnotMesh({
     name: 'object5',
     x: -13,
-    y: GEOMETRY.object5.r / 2,
+    y: GEOMETRY.object5.r,
     z: 12,
     parent: cargoGroup,
   });
