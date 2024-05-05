@@ -218,7 +218,7 @@ function createScene() {
   scene.add(new THREE.AxesHelper(20));
   scene.background = BACKGROUND;
 
-  //createFloor();
+  createFloor();
   createCrane();
   createContainer();
   createCargo();
@@ -360,17 +360,18 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-/* TODO
+
 // Create a geometry for the floor (a plane)
 function createFloor(){
-  const floorGeometry = new THREE.PlaneGeometry(200, 200);
-  const floorMaterial = new THREE.MeshBasicMaterial({ color: 0xabababab, side: THREE.DoubleSide }); // Change color as needed
-  const floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
-  floorMesh.rotation.x = -Math.PI / 2; // Rotate 90 degrees around the X-axis to make it horizontal
-  floorMesh.position.set(0, 0, 0);
-  scene.add(floorMesh);
+  const geometry = new THREE.PlaneGeometry(200, 200);
+  const material = new THREE.MeshBasicMaterial({ color: '#abF7B1' });
+
+  const plane = new THREE.Mesh(geometry, material);
+  plane.rotateX(-Math.PI / 2); // Rotate it so that it is in the xOz plane
+
+  scene.add(plane);
 }
-*/
+
 
 function createCrane() {
   const baseGroup = createGroup({ y: GEOMETRY.base.h / 2, parent: scene });
