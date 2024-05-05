@@ -360,9 +360,8 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-
 // Create a geometry for the floor (a plane)
-function createFloor(){
+function createFloor() {
   const geometry = new THREE.PlaneGeometry(200, 200);
   const material = new THREE.MeshBasicMaterial({ color: '#abF7B1' });
 
@@ -371,7 +370,6 @@ function createFloor(){
 
   scene.add(plane);
 }
-
 
 function createCrane() {
   const baseGroup = createGroup({ y: GEOMETRY.base.h / 2, parent: scene });
