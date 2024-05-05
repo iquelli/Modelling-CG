@@ -352,10 +352,6 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
   camera.updateProjectionMatrix();
 }
 
-/////////////////////
-/* CREATE LIGHT(S) */
-/////////////////////
-
 ////////////////////////
 /* CREATE OBJECT3D(S) */
 ////////////////////////
@@ -454,7 +450,7 @@ function createTrolley(trolleyGroup) {
 
 function createClaw(clawGroup) {
   // Wrist
-  createSphereMesh({ name: 'clawWrist', parent: clawGroup });
+  createRadialObjectMesh({ name: 'clawWrist', parent: clawGroup, geomFunc: THREE.SphereGeometry });
 
   // Fingers
   dynamicElements.fingers = [];
@@ -523,21 +519,36 @@ function createContainer() {
 function createCargo() {
   const cargoGroup = createGroup({ parent: scene });
   createBoxMesh({ name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5, parent: cargoGroup });
-  createDodecahedronMesh({
+  createRadialObjectMesh({
     name: 'object2',
     x: 16,
     y: GEOMETRY.object2.r,
     z: -5,
     parent: cargoGroup,
+    geomFunc: THREE.DodecahedronGeometry,
   });
-  createIcosahedronMesh({ name: 'object3', y: GEOMETRY.object3.r, z: -10, parent: cargoGroup });
-  createTorusMesh({ name: 'object4', x: 10, y: GEOMETRY.object4.r, z: 15, parent: cargoGroup });
-  createTorusKnotMesh({
+  createRadialObjectMesh({
+    name: 'object3',
+    y: GEOMETRY.object3.r,
+    z: -10,
+    parent: cargoGroup,
+    geomFunc: THREE.IcosahedronGeometry,
+  });
+  createRadialObjectMesh({
+    name: 'object4',
+    x: 10,
+    y: GEOMETRY.object4.r,
+    z: 15,
+    parent: cargoGroup,
+    geomFunc: THREE.TorusGeometry,
+  });
+  createRadialObjectMesh({
     name: 'object5',
     x: -13,
     y: GEOMETRY.object5.r,
     z: 12,
     parent: cargoGroup,
+    geomFunc: THREE.TorusKnotGeometry,
   });
 }
 
@@ -864,93 +875,21 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
 }
 
 /**
- * Create a THREE.Mesh with SphereGeometry, on the given position and with the scaling
+ * Create a THREE.Mesh with the geomFunc, on the given position and with the scaling
  * from the given profile (`name`).
  *
  * Automatically adds the created Mesh to the given parent.
  */
-function createSphereMesh({ name, x = 0, y = 0, z = 0, parent }) {
+function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc }) {
   const { r } = GEOMETRY[name];
   const material = MATERIAL[name];
-  const geometry = new THREE.SphereGeometry(r);
+  const geometry = new geomFunc(r);
 
-  const sphere = new THREE.Mesh(geometry, material);
-  sphere.position.set(x, y, z);
+  const radialObject = new THREE.Mesh(geometry, material);
+  radialObject.position.set(x, y, z);
 
-  parent.add(sphere);
-  return sphere;
-}
-
-/**
- * Create a THREE.Mesh with DodecahedronGeometry, on the given position and with the scaling
- * from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createDodecahedronMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { r } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.DodecahedronGeometry(r);
-
-  const dodecahedron = new THREE.Mesh(geometry, material);
-  dodecahedron.position.set(x, y, z);
-
-  parent.add(dodecahedron);
-  return dodecahedron;
-}
-
-/**
- * Create a THREE.Mesh with IcosahedronGeometry, on the given position and with the scaling
- * from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createIcosahedronMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { r } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.IcosahedronGeometry(r);
-
-  const icosahedron = new THREE.Mesh(geometry, material);
-  icosahedron.position.set(x, y, z);
-
-  parent.add(icosahedron);
-  return icosahedron;
-}
-
-/**
- * Create a THREE.Mesh with TorusGeometry, on the given position and with the scaling
- * from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createTorusMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { r } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.TorusGeometry(r);
-
-  const torus = new THREE.Mesh(geometry, material);
-  torus.position.set(x, y, z);
-
-  parent.add(torus);
-  return torus;
-}
-
-/**
- * Create a THREE.Mesh with TorusKnotGeometry, on the given position and with the scaling
- * from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createTorusKnotMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { r } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.TorusKnotGeometry(r);
-
-  const torusKnot = new THREE.Mesh(geometry, material);
-  torusKnot.position.set(x, y, z);
-
-  parent.add(torusKnot);
-  return torusKnot;
+  parent.add(radialObject);
+  return radialObject;
 }
 
 // main: Start everything
