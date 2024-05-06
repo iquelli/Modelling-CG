@@ -1,7 +1,5 @@
 'use strict';
 
-import * as THREE from 'three';
-
 //////////////////////
 /* GLOBAL CONSTANTS */
 //////////////////////
