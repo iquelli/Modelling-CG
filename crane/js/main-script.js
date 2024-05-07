@@ -32,6 +32,8 @@ const MATERIAL = Object.freeze({
   object3: new THREE.MeshBasicMaterial({ color: '#800080' }),
   object4: new THREE.MeshBasicMaterial({ color: '#00FFFF' }),
   object5: new THREE.MeshBasicMaterial({ color: '#FF69B4' }),
+
+  collision: new THREE.MeshBasicMaterial({ visible: false }),
 });
 
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
@@ -50,6 +52,7 @@ const GEOMETRY = {
   cable: { r: 0.3, h: 9 },
 
   clawWrist: { r: 0.5 },
+  clawCollision: { r: 2.5 },
   clawFingerBody: { w: 1.5, h: 0.2, d: 0.2 },
   clawFingerTip: { l: 0.2, h: 1, rz: -Math.PI / 2 },
 
@@ -167,6 +170,10 @@ const dynamicElements = {};
 
 let hudText;
 let pressedKeys = {};
+
+let clawColliding = false,
+  clawAnimating = false;
+let collidingObject;
 
 const cameras = {
   // front view
@@ -514,64 +521,121 @@ function createContainer() {
     z: +GEOMETRY.containerFloor.d / 2,
     parent: containerGroup,
   });
+  dynamicElements.container = containerGroup;
 }
 
 function createCargo() {
-  const cargoGroup = createGroup({ parent: scene });
-  createBoxMesh({ name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5, parent: cargoGroup });
-  createRadialObjectMesh({
-    name: 'object2',
-    x: 16,
-    y: GEOMETRY.object2.r,
-    z: -5,
-    parent: cargoGroup,
-    geomFunc: THREE.DodecahedronGeometry,
-  });
-  createRadialObjectMesh({
-    name: 'object3',
-    y: GEOMETRY.object3.r,
-    z: -10,
-    parent: cargoGroup,
-    geomFunc: THREE.IcosahedronGeometry,
-  });
-  createRadialObjectMesh({
-    name: 'object4',
-    x: 10,
-    y: GEOMETRY.object4.r,
-    z: 15,
-    parent: cargoGroup,
-    geomFunc: THREE.TorusGeometry,
-  });
-  createRadialObjectMesh({
-    name: 'object5',
-    x: -13,
-    y: GEOMETRY.object5.r + 0.8, // 0.4 * 2 is the default diameter
-    z: 13,
-    parent: cargoGroup,
-    geomFunc: THREE.TorusKnotGeometry,
+  dynamicElements.objects = [];
+  const objects = [
+    { type: 'box', name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5 },
+    { name: 'object2', x: 16, y: GEOMETRY.object2.r, z: -5, geomFunc: THREE.DodecahedronGeometry },
+    { name: 'object3', y: GEOMETRY.object3.r, z: -10, geomFunc: THREE.IcosahedronGeometry },
+    { name: 'object4', x: 10, y: GEOMETRY.object4.r, z: 15, geomFunc: THREE.TorusGeometry },
+    {
+      name: 'object5',
+      x: -13,
+      y: GEOMETRY.object5.r + 0.8,
+      z: 13,
+      geomFunc: THREE.TorusKnotGeometry,
+    },
+  ];
+
+  objects.forEach((obj) => {
+    const objectGroup = createGroup({ x: obj.x, y: obj.y, z: obj.z });
+
+    if (obj.type === 'box') {
+      createBoxMesh({
+        x: obj.x,
+        y: obj.y,
+        z: obj.z,
+        name: obj.name,
+        parent: scene,
+      });
+      dynamicElements.objects.push(
+        createCollisionObjectMesh({
+          parent: objectGroup,
+          maxdim: Math.max(GEOMETRY[obj.name].w, GEOMETRY[obj.name].h, GEOMETRY[obj.name].d) / 2,
+        })
+      );
+    } else {
+      createRadialObjectMesh({
+        x: obj.x,
+        y: obj.y,
+        z: obj.z,
+        name: obj.name,
+        parent: scene,
+        geomFunc: obj.geomFunc,
+      });
+      dynamicElements.objects.push(
+        createCollisionObjectMesh({ parent: objectGroup, maxdim: GEOMETRY[obj.name].r })
+      );
+    }
   });
 }
 
-//////////////////////
-/* CHECK COLLISIONS */
-//////////////////////
+function checkCollisions() {
+  let isColliding = false;
+  const objposition = new THREE.Vector3(),
+    clawposition = new THREE.Vector3();
 
-function checkCollisions() {}
+  dynamicElements.objects.forEach((child) => {
+    child.getWorldPosition(objposition);
+    dynamicElements.claw.getWorldPosition(clawposition);
+
+    const squaredsumofradius = Math.pow(
+      child.geometry.parameters.radius + GEOMETRY.clawCollision.r,
+      2
+    );
+    const squaredDistance =
+      Math.pow(clawposition.x - objposition.x, 2) +
+      Math.pow(clawposition.y - objposition.y, 2) +
+      Math.pow(clawposition.z - objposition.z, 2);
+
+    if (squaredDistance < squaredsumofradius) {
+      collidingObject = child;
+      isColliding = true;
+    }
+  });
+  console.log(isColliding);
+
+  return isColliding;
+}
 
 ///////////////////////
 /* HANDLE COLLISIONS */
 ///////////////////////
 
-function handleCollisions() {}
+function handleCollisions() {
+  if (clawAnimating) return;
+  clawAnimating = true;
+
+  dynamicElements.claw.userData.movementFlags = {};
+}
 
 ////////////
 /* UPDATE */
 ////////////
 
 function update(timeDelta) {
-  CRANE_DYNAMIC_PARTS.forEach((part) => DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part));
-}
+  if (checkCollisions()) {
+    if (!clawColliding) {
+      handleCollisions();
+    }
+    clawColliding = true;
+  } else {
+    clawColliding = false;
+  }
 
+  if (clawAnimating) {
+    const containerposition = new THREE.Vector3();
+    dynamicElements.container.getWorldPosition(containerposition);
+    collidingObject.getWorldPosition(dynamicElements.claw.position);
+  } else {
+    CRANE_DYNAMIC_PARTS.forEach((part) =>
+      DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part)
+    );
+  }
+}
 function rotateDynamicParts(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
   if (!group.userData?.movementFlags) {
@@ -827,10 +891,8 @@ function onKeyUp(e) {
 function updateHUD() {
   let keys = Object.keys(pressedKeys);
   if (keys.length > 0) {
-    console.log('Active Keys:', keys);
     keys.forEach((key) => {
       const button = document.getElementById(key.toUpperCase());
-      console.log(button);
       if (button) {
         click(button);
       }
@@ -944,6 +1006,17 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
   const { r } = GEOMETRY[name];
   const material = MATERIAL[name];
   const geometry = new geomFunc(r);
+
+  const radialObject = new THREE.Mesh(geometry, material);
+  radialObject.position.set(x, y, z);
+
+  parent.add(radialObject);
+  return radialObject;
+}
+
+function createCollisionObjectMesh({ x = 0, y = 0, z = 0, parent, maxdim }) {
+  const material = MATERIAL['collision'];
+  const geometry = new THREE.SphereGeometry(maxdim);
 
   const radialObject = new THREE.Mesh(geometry, material);
   radialObject.position.set(x, y, z);
