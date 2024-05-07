@@ -750,17 +750,17 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 }
 
 function toggleWired() {
-    return (_event, isKeyUp) => {
-        if (isKeyUp) {
-          return;
-        }
+  return (_event, isKeyUp) => {
+    if (isKeyUp) {
+      return;
+    }
 
-        scene.traverse(function(child) {
-            if (child instanceof THREE.Mesh) {
-                child.material.wireframe = !child.material.wireframe;
-            }
-        });
-    };
+    scene.traverse(function (child) {
+      if (child instanceof THREE.Mesh) {
+        child.material.wireframe = !child.material.wireframe;
+      }
+    });
+  };
 }
 
 function transformDynamicPartHandleFactory({ parts, flag }) {
