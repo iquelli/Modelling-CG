@@ -805,7 +805,7 @@ function toggleWired() {
     }
 
     for (const material of Object.values(MATERIAL)) {
-        material.wireframe = !material.wireframe;
+      material.wireframe = !material.wireframe;
     }
   };
 }
