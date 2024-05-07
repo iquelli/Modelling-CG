@@ -49,7 +49,7 @@ const GEOMETRY = {
   rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
   frontPendant: { r: 0.1, h: 18.5, rz: Math.PI / 2.2 },
   trolley: { w: 3, h: 2, d: 2 },
-  cable: { r: 0.3, h: 9 },
+  cable: { r: 0.3, h: 15 },
 
   clawWrist: { r: 0.5 },
   clawCollision: { r: 2.5 },
@@ -66,22 +66,6 @@ const GEOMETRY = {
   object4: { r: 1.75 },
   object5: { r: 1 },
 };
-
-/* TODO
-// absolute coordinates
-const CRANE_AABB_POINTS = {
-  min: new THREE.Vector3(
-    -GEOMETRY.jib.w - GEOMETRY.cab.w / 2,
-    -GEOMETRY.base.h / 2,
-    -GEOMETRY.jib.w - GEOMETRY.cab.w / 2
-  ),
-  max: new THREE.Vector3(
-    GEOMETRY.jib.w - GEOMETRY.cab.w / 2,
-    GEOMETRY.base.h / 2 + GEOMETRY.tower.h + GEOMETRY.cab.h + GEOMETRY.apex.h ,
-    GEOMETRY.jib.w - GEOMETRY.cab.w / 2
-  ),
-};
-*/
 
 const CAMERA_GEOMETRY = Object.freeze({
   sceneViewAABB: [new THREE.Vector3(-20, -5, -20), new THREE.Vector3(20, 35, 20)],
@@ -596,7 +580,6 @@ function checkCollisions() {
       isColliding = true;
     }
   });
-  console.log(isColliding);
 
   return isColliding;
 }
@@ -703,7 +686,7 @@ function resizeCable(timeDelta, { part, profile }) {
 
   GEOMETRY.cable.h = THREE.MathUtils.clamp(GEOMETRY.cable.h - delta['y'], props.min, props.max);
   group.position.setY(-(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2);
-  group.scale.set(1, GEOMETRY.cable.h / 9); // 9 is the default length of the cable
+  group.scale.set(1, GEOMETRY.cable.h / 15); // 15 is the default length of the cable
 }
 
 function deltaSupplier({ profile, group, timeDelta }) {
@@ -784,6 +767,8 @@ const keyHandlers = {
   Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
   Digit5: changeActiveCameraHandleFactory(cameras.perspective),
   Digit6: changeActiveCameraHandleFactory(cameras.mobile),
+
+  // Wireframe
   Digit7: toggleWired(),
 
   // Rotations and translations
