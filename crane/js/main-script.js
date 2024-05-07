@@ -6,6 +6,8 @@
 
 const BACKGROUND = new THREE.Color(0xcbfeff);
 
+const FLOAT_COMPARISON_THRESHOLD = 1e-4;
+
 const MATERIAL = Object.freeze({
   base: new THREE.MeshBasicMaterial({ color: '#2f2e32' }),
   tower: new THREE.MeshBasicMaterial({ color: '#f0c000' }),
@@ -32,8 +34,6 @@ const MATERIAL = Object.freeze({
   object3: new THREE.MeshBasicMaterial({ color: '#800080' }),
   object4: new THREE.MeshBasicMaterial({ color: '#00FFFF' }),
   object5: new THREE.MeshBasicMaterial({ color: '#FF69B4' }),
-
-  collision: new THREE.MeshBasicMaterial({ visible: false }),
 });
 
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
@@ -131,6 +131,7 @@ const MOVEMENT_FLAGS_VECTORS = Object.freeze({
 });
 
 const MOVEMENT_TIME = 2300; // miliseconds
+const CLAW_MOVEMENT_SPEED = 10 / 1000; // units/millisecond
 const DELTAS = Object.freeze(
   Object.fromEntries([
     // automatically generate DELTAs for the parts with defined degrees of freedom
@@ -141,6 +142,8 @@ const DELTAS = Object.freeze(
     }),
   ])
 );
+
+const CLAW_ANIMATION_TARGET = new THREE.Vector3(4, 0, 4); //Cordinates of container's centre
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -528,30 +531,25 @@ function createCargo() {
     const objectGroup = createGroup({ x: obj.x, y: obj.y, z: obj.z });
 
     if (obj.type === 'box') {
-      createBoxMesh({
-        x: obj.x,
-        y: obj.y,
-        z: obj.z,
-        name: obj.name,
-        parent: scene,
-      });
       dynamicElements.objects.push(
-        createCollisionObjectMesh({
-          parent: objectGroup,
-          maxdim: Math.max(GEOMETRY[obj.name].w, GEOMETRY[obj.name].h, GEOMETRY[obj.name].d) / 2,
+        createBoxMesh({
+          x: obj.x,
+          y: obj.y,
+          z: obj.z,
+          name: obj.name,
+          parent: scene,
         })
       );
     } else {
-      createRadialObjectMesh({
-        x: obj.x,
-        y: obj.y,
-        z: obj.z,
-        name: obj.name,
-        parent: scene,
-        geomFunc: obj.geomFunc,
-      });
       dynamicElements.objects.push(
-        createCollisionObjectMesh({ parent: objectGroup, maxdim: GEOMETRY[obj.name].r })
+        createRadialObjectMesh({
+          x: obj.x,
+          y: obj.y,
+          z: obj.z,
+          name: obj.name,
+          parent: scene,
+          geomFunc: obj.geomFunc,
+        })
       );
     }
   });
@@ -559,23 +557,25 @@ function createCargo() {
 
 function checkCollisions() {
   let isColliding = false;
-  const objposition = new THREE.Vector3(),
-    clawposition = new THREE.Vector3();
+  const objPosition = new THREE.Vector3();
+  const clawPosition = new THREE.Vector3();
+  const boundingSphere = new THREE.Sphere(); // Create a single sphere for reuse
 
   dynamicElements.objects.forEach((child) => {
-    child.getWorldPosition(objposition);
-    dynamicElements.claw.getWorldPosition(clawposition);
+    child.getWorldPosition(objPosition);
+    child.geometry.computeBoundingSphere(boundingSphere); // Update sphere for current object
+    dynamicElements.claw.getWorldPosition(clawPosition);
 
-    const squaredsumofradius = Math.pow(
-      child.geometry.parameters.radius + GEOMETRY.clawCollision.r,
+    const squaredSumOfRadius = Math.pow(
+      child.geometry.boundingSphere.radius + GEOMETRY.clawCollision.r,
       2
     );
     const squaredDistance =
-      Math.pow(clawposition.x - objposition.x, 2) +
-      Math.pow(clawposition.y - objposition.y, 2) +
-      Math.pow(clawposition.z - objposition.z, 2);
+      Math.pow(clawPosition.x - objPosition.x, 2) +
+      Math.pow(clawPosition.y - objPosition.y, 2) +
+      Math.pow(clawPosition.z - objPosition.z, 2);
 
-    if (squaredDistance < squaredsumofradius) {
+    if (squaredDistance < squaredSumOfRadius) {
       collidingObject = child;
       isColliding = true;
     }
@@ -591,8 +591,6 @@ function checkCollisions() {
 function handleCollisions() {
   if (clawAnimating) return;
   clawAnimating = true;
-
-  dynamicElements.claw.userData.movementFlags = {};
 }
 
 ////////////
@@ -610,9 +608,30 @@ function update(timeDelta) {
   }
 
   if (clawAnimating) {
-    const containerposition = new THREE.Vector3();
+    // COMPUTE ANIMATION
+    const containerposition = new THREE.Vector3(),
+      clawposition = new THREE.Vector3();
+    dynamicElements.claw.getWorldPosition(clawposition);
     dynamicElements.container.getWorldPosition(containerposition);
-    collidingObject.getWorldPosition(dynamicElements.claw.position);
+
+    collidingObject.position.set(0, -2.5, 0); //TO BE CHECKED
+
+    translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
+      const direction = new THREE.Vector3(-4, 0, 0);
+
+      if (direction.lengthSq() <= FLOAT_COMPARISON_THRESHOLD) {
+        trailerAnimating = false;
+        return new THREE.Vector3();
+      }
+
+      const maxMovement = direction.length();
+
+      return direction
+        .normalize()
+        .multiplyScalar(CLAW_MOVEMENT_SPEED * timeDelta)
+        .clampLength(0, maxMovement);
+    });
+    clawAnimating = false;
   } else {
     CRANE_DYNAMIC_PARTS.forEach((part) =>
       DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part)
@@ -991,17 +1010,6 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
   const { r } = GEOMETRY[name];
   const material = MATERIAL[name];
   const geometry = new geomFunc(r);
-
-  const radialObject = new THREE.Mesh(geometry, material);
-  radialObject.position.set(x, y, z);
-
-  parent.add(radialObject);
-  return radialObject;
-}
-
-function createCollisionObjectMesh({ x = 0, y = 0, z = 0, parent, maxdim }) {
-  const material = MATERIAL['collision'];
-  const geometry = new THREE.SphereGeometry(maxdim);
 
   const radialObject = new THREE.Mesh(geometry, material);
   radialObject.position.set(x, y, z);
