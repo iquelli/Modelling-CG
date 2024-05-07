@@ -813,31 +813,31 @@ function onKeyUp(e) {
 function updateHUD() {
   let keys = Object.keys(pressedKeys);
   if (keys.length > 0) {
-    console.log("Active Keys:", keys);
-        keys.forEach(key => {
-            const button = document.getElementById(key.toUpperCase());
-            console.log(button);
-            if (button) {
-                click(button)
-            }
-        });
+    console.log('Active Keys:', keys);
+    keys.forEach((key) => {
+      const button = document.getElementById(key.toUpperCase());
+      console.log(button);
+      if (button) {
+        click(button);
+      }
+    });
   } else {
     const allButtons = document.querySelectorAll('button');
-        allButtons.forEach(button => {
-            removeClick(button);
-        });
+    allButtons.forEach((button) => {
+      removeClick(button);
+    });
   }
 }
 
 function click(button) {
-    button.style.backgroundColor = '#d0d0d0';
-    button.style.transform = 'translateY(1px)';
+  button.style.backgroundColor = '#d0d0d0';
+  button.style.transform = 'translateY(1px)';
 }
 
 function removeClick(button) {
-    // Reset to default value
-    button.style.backgroundColor = '';
-    button.style.transform = '';
+  // Reset to default value
+  button.style.backgroundColor = '';
+  button.style.transform = '';
 }
 
 /**
