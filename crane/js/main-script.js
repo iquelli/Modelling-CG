@@ -219,7 +219,6 @@ function createScene() {
   scene.add(new THREE.AxesHelper(20));
   scene.background = BACKGROUND;
 
-  createFloor();
   createCrane();
   createContainer();
   createCargo();
@@ -721,6 +720,7 @@ const keyHandlers = {
   Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
   Digit5: changeActiveCameraHandleFactory(cameras.perspective),
   Digit6: changeActiveCameraHandleFactory(cameras.mobile),
+  Digit7: toggleWired(),
 
   // Rotations and translations
 
@@ -747,6 +747,20 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
     refreshCameraParameters(cameraDescriptor);
     activeCamera = cameraDescriptor;
   };
+}
+
+function toggleWired() {
+    return (_event, isKeyUp) => {
+        if (isKeyUp) {
+          return;
+        }
+
+        scene.traverse(function(child) {
+            if (child instanceof THREE.Mesh) {
+                child.material.wireframe = !child.material.wireframe;
+            }
+        });
+    };
 }
 
 function transformDynamicPartHandleFactory({ parts, flag }) {
