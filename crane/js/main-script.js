@@ -143,7 +143,7 @@ const MOVEMENT_FLAGS_VECTORS = Object.freeze({
   zNegative: new THREE.Vector3(0, 0, -1),
 });
 
-const MOVEMENT_TIME = 2000; // miliseconds
+const MOVEMENT_TIME = 2300; // miliseconds
 const DELTAS = Object.freeze(
   Object.fromEntries([
     // automatically generate DELTAs for the parts with defined degrees of freedom
@@ -359,7 +359,7 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 
 // Create a geometry for the floor (a plane)
 function createFloor() {
-  const geometry = new THREE.PlaneGeometry(200, 200);
+  const geometry = new THREE.PlaneGeometry(5000, 5000);
   const material = new THREE.MeshBasicMaterial({ color: '#abF7B1' });
 
   const plane = new THREE.Mesh(geometry, material);
@@ -546,8 +546,8 @@ function createCargo() {
   createRadialObjectMesh({
     name: 'object5',
     x: -13,
-    y: GEOMETRY.object5.r,
-    z: 12,
+    y: GEOMETRY.object5.r + 0.8, // 0.4 * 2 is the default diameter
+    z: 13,
     parent: cargoGroup,
     geomFunc: THREE.TorusKnotGeometry,
   });
