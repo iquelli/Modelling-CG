@@ -823,11 +823,9 @@ function toggleWired() {
       return;
     }
 
-    scene.traverse(function (child) {
-      if (child instanceof THREE.Mesh) {
-        child.material.wireframe = !child.material.wireframe;
-      }
-    });
+    for (const material of Object.values(MATERIAL)) {
+      material.wireframe = !material.wireframe;
+    }
   };
 }
 
