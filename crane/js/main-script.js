@@ -165,6 +165,9 @@ let prevTimeStamp;
 
 const dynamicElements = {};
 
+let hudText;
+let pressedKeys = {};
+
 const cameras = {
   // front view
   front: createOrthogonalCamera({
@@ -672,6 +675,10 @@ function init() {
   createScene();
   createCameras();
 
+  // Create HUD text
+  hudText = document.getElementById('info');
+
+  // Event listeners for keypress
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('resize', onResize);
@@ -770,7 +777,11 @@ function onKeyDown(e) {
     code = code.replace('Numpad', 'Digit');
   }
 
-  keyHandlers[code]?.(event, false);
+  if (code in keyHandlers) {
+    pressedKeys[e.key] = true;
+    keyHandlers[code]?.(event, false);
+    updateHUD();
+  }
 }
 
 ///////////////////////
@@ -785,12 +796,28 @@ function onKeyUp(e) {
     code = code.replace('Numpad', 'Digit');
   }
 
-  keyHandlers[code]?.(event, true);
+  if (code in keyHandlers) {
+    keyHandlers[code]?.(event, true);
+    delete pressedKeys[e.key];
+    updateHUD();
+  }
 }
 
 ///////////////
 /* UTILITIES */
 ///////////////
+
+/**
+ * Update HUD to display pressed keys
+ */
+function updateHUD() {
+  let keys = Object.keys(pressedKeys);
+  if (keys.length > 0) {
+    hudText.textContent = 'Pressed Keys: ' + keys.join(', ');
+  } else {
+    hudText.textContent = '';
+  }
+}
 
 /**
  * Create a THREE.Group on the given position and with the given scale.
@@ -889,7 +916,3 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
   parent.add(radialObject);
   return radialObject;
 }
-
-// main: Start everything
-init();
-requestAnimationFrame(animate);

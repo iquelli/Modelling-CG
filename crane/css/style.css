@@ -3,3 +3,12 @@ body {
   background-color: #fff;
   overflow: hidden;
 }
+
+#info {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: black;
+  font-family: Arial, sans-serif;
+  font-size: 15pt;
+}
