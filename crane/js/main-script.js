@@ -143,7 +143,7 @@ const DELTAS = Object.freeze(
   ])
 );
 
-const CLAW_ANIMATION_TARGET = new THREE.Vector3(4, 0, 4); //Cordinates of container's centre
+const CLAW_ANIMATION_TARGET = new THREE.Vector3(4, 0, 4); // cordinates of container's centre
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -505,7 +505,7 @@ function createContainer() {
   createBoxMesh({
     name: 'bigContainerWall',
     y: GEOMETRY.smallContainerWall.h / 2,
-    z: +GEOMETRY.containerFloor.d / 2,
+    z: GEOMETRY.containerFloor.d / 2,
     parent: containerGroup,
   });
   dynamicElements.container = containerGroup;
@@ -521,15 +521,13 @@ function createCargo() {
     {
       name: 'object5',
       x: -13,
-      y: GEOMETRY.object5.r + 0.8,
+      y: GEOMETRY.object5.r + 0.8, // 0.4 * 2 is the diameter of the tube
       z: 13,
       geomFunc: THREE.TorusKnotGeometry,
     },
   ];
 
   objects.forEach((obj) => {
-    const objectGroup = createGroup({ x: obj.x, y: obj.y, z: obj.z });
-
     if (obj.type === 'box') {
       dynamicElements.objects.push(
         createBoxMesh({
@@ -555,25 +553,29 @@ function createCargo() {
   });
 }
 
+//////////////////////
+/* CHECK COLLISIONS */
+//////////////////////
+
 function checkCollisions() {
   let isColliding = false;
-  const objPosition = new THREE.Vector3();
-  const clawPosition = new THREE.Vector3();
+  const objPos = new THREE.Vector3();
+  const clawPos = new THREE.Vector3();
   const boundingSphere = new THREE.Sphere(); // Create a single sphere for reuse
 
   dynamicElements.objects.forEach((child) => {
-    child.getWorldPosition(objPosition);
+    child.getWorldPosition(objPos);
     child.geometry.computeBoundingSphere(boundingSphere); // Update sphere for current object
-    dynamicElements.claw.getWorldPosition(clawPosition);
+    dynamicElements.claw.getWorldPosition(clawPos);
 
     const squaredSumOfRadius = Math.pow(
       child.geometry.boundingSphere.radius + GEOMETRY.clawCollision.r,
       2
     );
     const squaredDistance =
-      Math.pow(clawPosition.x - objPosition.x, 2) +
-      Math.pow(clawPosition.y - objPosition.y, 2) +
-      Math.pow(clawPosition.z - objPosition.z, 2);
+      Math.pow(clawPos.x - objPos.x, 2) +
+      Math.pow(clawPos.y - objPos.y, 2) +
+      Math.pow(clawPos.z - objPos.z, 2);
 
     if (squaredDistance < squaredSumOfRadius) {
       collidingObject = child;
@@ -588,9 +590,30 @@ function checkCollisions() {
 /* HANDLE COLLISIONS */
 ///////////////////////
 
-function handleCollisions() {
-  if (clawAnimating) return;
-  clawAnimating = true;
+function handleCollisions(timeDelta) {
+  const containerPos = new THREE.Vector3(),
+    clawPos = new THREE.Vector3();
+  dynamicElements.claw.getWorldPosition(clawPos);
+  dynamicElements.container.getWorldPosition(containerPos);
+
+  collidingObject.position.set(0, -2.5, 0); // TODO: TO BE CHECKED
+
+  // TODO: fix this sending the trolley far away
+  // translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
+  //   const direction = new THREE.Vector3(-4, 0, 0);
+
+  //   if (direction.lengthSq() <= FLOAT_COMPARISON_THRESHOLD) {
+  //     return new THREE.Vector3();
+  //   }
+
+  //   const maxMovement = direction.length();
+
+  //   return direction
+  //     .normalize()
+  //     .multiplyScalar(CLAW_MOVEMENT_SPEED * timeDelta)
+  //     .clampLength(0, maxMovement);
+  // });
+  clawAnimating = false;
 }
 
 ////////////
@@ -600,44 +623,19 @@ function handleCollisions() {
 function update(timeDelta) {
   if (checkCollisions()) {
     if (!clawColliding) {
-      handleCollisions();
+      // COMPUTE ANIMATION
+      handleCollisions(timeDelta);
     }
     clawColliding = true;
   } else {
     clawColliding = false;
   }
 
-  if (clawAnimating) {
-    // COMPUTE ANIMATION
-    const containerposition = new THREE.Vector3(),
-      clawposition = new THREE.Vector3();
-    dynamicElements.claw.getWorldPosition(clawposition);
-    dynamicElements.container.getWorldPosition(containerposition);
-
-    collidingObject.position.set(0, -2.5, 0); //TO BE CHECKED
-
-    translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
-      const direction = new THREE.Vector3(-4, 0, 0);
-
-      if (direction.lengthSq() <= FLOAT_COMPARISON_THRESHOLD) {
-        trailerAnimating = false;
-        return new THREE.Vector3();
-      }
-
-      const maxMovement = direction.length();
-
-      return direction
-        .normalize()
-        .multiplyScalar(CLAW_MOVEMENT_SPEED * timeDelta)
-        .clampLength(0, maxMovement);
-    });
-    clawAnimating = false;
-  } else {
-    CRANE_DYNAMIC_PARTS.forEach((part) =>
-      DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part)
-    );
-  }
+  CRANE_DYNAMIC_PARTS.forEach((part) =>
+    DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part)
+  );
 }
+
 function rotateDynamicParts(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
   if (!group.userData?.movementFlags) {
@@ -743,7 +741,7 @@ function init() {
   // Create HUD text
   hudText = document.getElementById('controls');
 
-  // Event listeners for keypress
+  // Event listeners for keypresses
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('resize', onResize);
