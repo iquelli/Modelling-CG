@@ -83,8 +83,8 @@ const CAMERA_GEOMETRY = Object.freeze({
 const DEGREES_OF_FREEDOM = Object.freeze({
   top: {
     applier: rotateDynamicPart,
-    min: -Math.PI,
-    max: Math.PI,
+    min: -2 * Math.PI,
+    max: 2 * Math.PI,
     axis: 'y',
   },
   trolley: {
@@ -130,7 +130,7 @@ const MOVEMENT_FLAGS_VECTORS = Object.freeze({
   zNegative: new THREE.Vector3(0, 0, -1),
 });
 
-const MOVEMENT_TIME = 2300; // miliseconds
+const MOVEMENT_TIME = 4000; // miliseconds
 const CLAW_MOVEMENT_SPEED = 10 / 1000; // units/millisecond
 const DELTAS = Object.freeze(
   Object.fromEntries([
@@ -588,9 +588,9 @@ function handleCollisions(timeDelta) {
   dynamicElements.claw.getWorldPosition(clawPos);
   dynamicElements.container.getWorldPosition(containerPos);
 
-  collidingObject.position.set(0, -2.5, 0); // TODO: TO BE CHECKED
-
   // TODO: fix this sending the trolley far away
+  // collidingObject.position.set(0, -2.5, 0);
+
   // translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
   //   const direction = new THREE.Vector3(-4, 0, 0);
 
@@ -605,23 +605,26 @@ function handleCollisions(timeDelta) {
   //     .multiplyScalar(CLAW_MOVEMENT_SPEED * timeDelta)
   //     .clampLength(0, maxMovement);
   // });
-  clawAnimating = false;
+
+  // returns false if done with the animation, otherwise returns true
+  return false;
 }
+
+function limitTranslate() {}
+
+function limitRotate() {}
 
 ////////////
 /* UPDATE */
 ////////////
 
 function update(timeDelta) {
-  if (checkCollisions()) {
-    if (!clawColliding) {
-      // COMPUTE ANIMATION
-      handleCollisions(timeDelta);
-    }
-    clawColliding = true;
-  } else {
-    clawColliding = false;
+  // COMPUTE ANIMATION
+  if (checkCollisions() && handleCollisions(timeDelta)) {
+    clawAnimating = true;
+    return;
   }
+  clawAnimating = false;
 
   CRANE_DYNAMIC_PARTS.forEach((part) => DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part));
 }
@@ -845,7 +848,7 @@ function onKeyDown(e) {
     code = code.replace('Numpad', 'Digit');
   }
 
-  if (code in keyHandlers) {
+  if (code in keyHandlers && !clawAnimating) {
     pressedKeys[e.key] = true;
     keyHandlers[code]?.(event, false);
     updateHUD();
