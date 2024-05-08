@@ -226,8 +226,6 @@ function createCameras() {
   // set the initial camera
   activeCamera = cameras.front;
 
-  console.log(dynamicElements.claw);
-
   Object.values(cameras).forEach((cameraDescriptor) => {
     refreshCameraParameters(cameraDescriptor);
     cameraDescriptor.camera.lookAt(scene.position);
