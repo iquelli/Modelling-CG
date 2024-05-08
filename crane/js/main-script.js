@@ -810,7 +810,7 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 
 function toggleWired() {
   return (_event, isKeyUp) => {
-    if (isKeyUp) {
+    if (isKeyUp || event.repeat) {
       return;
     }
 
