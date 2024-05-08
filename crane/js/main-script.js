@@ -350,17 +350,6 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-// Create a geometry for the floor (a plane)
-function createFloor() {
-  const geometry = new THREE.PlaneGeometry(5000, 5000);
-  const material = new THREE.MeshBasicMaterial({ color: '#abF7B1' });
-
-  const plane = new THREE.Mesh(geometry, material);
-  plane.rotateX(-Math.PI / 2); // Rotate it so that it is in the xOz plane
-
-  scene.add(plane);
-}
-
 function createCrane() {
   const baseGroup = createGroup({ y: GEOMETRY.base.h / 2, parent: scene });
   const topGroup = createGroup({ y: GEOMETRY.base.h / 2 + GEOMETRY.tower.h, parent: baseGroup });
