@@ -631,9 +631,7 @@ function update(timeDelta) {
     clawColliding = false;
   }
 
-  CRANE_DYNAMIC_PARTS.forEach((part) =>
-    DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part)
-  );
+  CRANE_DYNAMIC_PARTS.forEach((part) => DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part));
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
