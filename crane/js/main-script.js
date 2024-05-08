@@ -198,9 +198,9 @@ const cameras = {
   }),
   // mobile perspective projection
   mobile: createPerspectiveCamera({
-    x: CAMERA_GEOMETRY.perspectiveDistance,
-    y: CAMERA_GEOMETRY.perspectiveDistance,
-    z: CAMERA_GEOMETRY.perspectiveDistance,
+    x: 5,
+    y: 5,
+    z: 0,
   }),
 };
 
@@ -226,10 +226,15 @@ function createCameras() {
   // set the initial camera
   activeCamera = cameras.front;
 
+  console.log(dynamicElements.claw);
+
   Object.values(cameras).forEach((cameraDescriptor) => {
     refreshCameraParameters(cameraDescriptor);
     cameraDescriptor.camera.lookAt(scene.position);
   });
+
+  // Attach camera to claw group
+  dynamicElements.claw.add(cameras.mobile.camera);
 }
 
 function getVisibleAreaBoundingBox() {
@@ -313,7 +318,7 @@ function createOrthogonalCamera({
   return { getCameraParameters, camera };
 }
 
-function createPerspectiveCamera({ x = 0, y = 0, z = 0 }) {
+function createPerspectiveCamera({ x = 0, y = 0, z = 0}) {
   const getCameraParameters = () => {
     return { aspect: window.innerWidth / window.innerHeight };
   };
