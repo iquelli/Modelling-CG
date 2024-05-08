@@ -160,6 +160,7 @@ let pressedKeys = {};
 
 let clawColliding = false,
   clawAnimating = false;
+
 let collidingObject;
 
 const cameras = {
@@ -587,9 +588,29 @@ function handleCollisions(timeDelta) {
     clawPos = new THREE.Vector3();
   dynamicElements.claw.getWorldPosition(clawPos);
   dynamicElements.container.getWorldPosition(containerPos);
+  dynamicElements.claw.add(collidingObject);
+
+  const angle = new THREE.Vector3(containerPos.x, 0, containerPos.z).angleTo(
+    new THREE.Vector3(clawPos.x, 0, clawPos.z)
+  );
+
+  console.log(angle);
 
   // TODO: fix this sending the trolley far away
-  // collidingObject.position.set(0, -2.5, 0);
+  collidingObject.position.set(0, -2.5, 0);
+  if (GEOMETRY.cable.h !== 0) {
+    transformDynamicPartHandleFactory2({ parts: ['cable', 'claw'], flag: 'yPositive' })(false);
+  } else {
+    if (dynamicElements.trolley.position.x >= 10) {
+      transformDynamicPartHandleFactory2({ parts: ['cable', 'claw'], flag: 'yPositive' })(true);
+      transformDynamicPartHandleFactory2({ parts: ['trolley'], flag: 'xNegative' })(false);
+    }
+    if (Math.abs(angle) > FLOAT_COMPARISON_THRESHOLD) {
+      transformDynamicPartHandleFactory2({ parts: ['top'], flag: 'yPositive' })(false);
+    } else {
+      transformDynamicPartHandleFactory2({ parts: ['top'], flag: 'yPositive' })(true);
+    }
+  }
 
   // translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
   //   const direction = new THREE.Vector3(-4, 0, 0);
@@ -626,14 +647,15 @@ function update(timeDelta) {
   }
   clawAnimating = false;
 
-  CRANE_DYNAMIC_PARTS.forEach((part) => DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part));
+  CRANE_DYNAMIC_PARTS.forEach((part) => {
+    if (dynamicElements[part.part].userData?.movementFlags) {
+      DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part);
+    }
+  });
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-  if (!group.userData?.movementFlags) {
-    return;
-  }
 
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
@@ -644,9 +666,6 @@ function rotateDynamicParts(timeDelta, { part, profile }) {
 
 function rotateDynamicPart(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-  if (!group.userData?.movementFlags) {
-    return;
-  }
 
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
@@ -658,7 +677,7 @@ function rotateGroup(group, props, delta) {
     ['x', 'y', 'z'].map((axis) => {
       const newValue = group.rotation[axis] + delta[axis];
       if (props?.axis === axis) {
-        return THREE.MathUtils.clamp(newValue, props.min, props.max);
+        return newValue;
       }
       return newValue;
     })
@@ -667,9 +686,6 @@ function rotateGroup(group, props, delta) {
 
 function translateDynamicPart(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-  if (!group.userData?.movementFlags) {
-    return;
-  }
 
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
@@ -687,9 +703,6 @@ function translateDynamicPart(timeDelta, { part, profile }) {
 
 function resizeCable(timeDelta, { part, profile }) {
   var group = dynamicElements[part];
-  if (!group.userData?.movementFlags) {
-    return;
-  }
 
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
@@ -827,6 +840,17 @@ function transformDynamicPartHandleFactory({ parts, flag }) {
       return;
     }
 
+    parts.forEach((part) => {
+      const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
+      const movementFlags = userData.movementFlags || (userData.movementFlags = {});
+
+      movementFlags[flag] = !isKeyUp;
+    });
+  };
+}
+
+function transformDynamicPartHandleFactory2({ parts, flag }) {
+  return (isKeyUp) => {
     parts.forEach((part) => {
       const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
       const movementFlags = userData.movementFlags || (userData.movementFlags = {});
