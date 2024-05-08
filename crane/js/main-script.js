@@ -316,7 +316,7 @@ function createOrthogonalCamera({
   return { getCameraParameters, camera };
 }
 
-function createPerspectiveCamera({ x = 0, y = 0, z = 0}) {
+function createPerspectiveCamera({ x = 0, y = 0, z = 0 }) {
   const getCameraParameters = () => {
     return { aspect: window.innerWidth / window.innerHeight };
   };
