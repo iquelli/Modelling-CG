@@ -507,7 +507,7 @@ function createCargo() {
   const objects = [
     { type: 'box', name: 'object1', y: GEOMETRY.object1.h / 2 },
     { name: 'object2', y: GEOMETRY.object2.r, geomFunc: THREE.DodecahedronGeometry },
-    { name: 'object3', y: GEOMETRY.object3.r, geomFunc: THREE.IcosahedronGeometry },
+    { name: 'object3', y: Math.sqrt(Math.pow(GEOMETRY.object3.r, 2)* 3/4), geomFunc: THREE.IcosahedronGeometry },
     { name: 'object4', y: GEOMETRY.object4.r, geomFunc: THREE.TorusGeometry },
     {
       name: 'object5',
