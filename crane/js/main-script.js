@@ -49,7 +49,7 @@ const GEOMETRY = {
   rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
   frontPendant: { r: 0.1, h: 18.5, rz: Math.PI / 2.2 },
   trolley: { w: 3, h: 2, d: 2 },
-  cable: { r: 0.3, h: 10 },
+  cable: { r: 0.3, h: 9 },
 
   clawWrist: { r: 0.5 },
   clawCollision: { r: 2.5 },
@@ -96,12 +96,12 @@ const DEGREES_OF_FREEDOM = Object.freeze({
   cable: {
     applier: resizeCable,
     min: 0,
-    max: GEOMETRY.cable.h,
+    max: 15,
     axis: 'y',
   },
   claw: {
     applier: translateDynamicPart,
-    min: -(GEOMETRY.trolley.h / 2 + GEOMETRY.cable.h + GEOMETRY.clawWrist.r),
+    min: -(GEOMETRY.trolley.h / 2 + 15 + GEOMETRY.clawWrist.r),
     max: -(GEOMETRY.trolley.h / 2 + GEOMETRY.clawWrist.r),
     axis: 'y',
   },
@@ -576,8 +576,12 @@ function checkCollisions() {
 
   dynamicElements.objects.forEach((child) => {
     child.getWorldPosition(objPos);
-    if (colliding(clawPos, objPos, GEOMETRY.clawCollision.r, child.geometry.boundingSphere.radius))
+    if (
+      colliding(clawPos, objPos, GEOMETRY.clawCollision.r, child.geometry.boundingSphere.radius)
+    ) {
+      collidingObject = child;
       isColliding = true;
+    }
   });
   return isColliding;
 }
@@ -719,7 +723,7 @@ function resizeCable(timeDelta, { part, profile }) {
 
   GEOMETRY.cable.h = THREE.MathUtils.clamp(GEOMETRY.cable.h - delta['y'], props.min, props.max);
   group.position.setY(-(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2);
-  group.scale.set(1, GEOMETRY.cable.h / 15); // 15 is the default length of the cable
+  group.scale.set(1, GEOMETRY.cable.h / 9); // 9 is the default length of the cable
 }
 
 function deltaSupplier({ profile, group, timeDelta }) {
@@ -1027,11 +1031,9 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
 }
 
 /**
-
-Generates a random position for an object that does not intersect with the container base or the crane base.
-@param {THREE.Object3D} object - The object for which to generate a random position.
-*/
-
+ * Generates a random position for an object that does not intersect with the container base or the crane base.
+ * @param {THREE.Object3D} object - The object for which to generate a random position.
+ */
 function generateRandomPosition(object) {
   const CONTAINER_BASE_BOUND = {
     max: {
