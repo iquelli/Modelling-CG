@@ -6,7 +6,7 @@
 
 const BACKGROUND = new THREE.Color(0xcbfeff);
 
-const FLOAT_COMPARISON_THRESHOLD = 1e-4;
+const FLOAT_COMPARISON_THRESHOLD = 1e-1;
 
 const MATERIAL = Object.freeze({
   base: new THREE.MeshBasicMaterial({ color: '#2f2e32' }),
@@ -83,9 +83,10 @@ const CAMERA_GEOMETRY = Object.freeze({
 const DEGREES_OF_FREEDOM = Object.freeze({
   top: {
     applier: rotateDynamicPart,
-    min: -2 * Math.PI,
-    max: 2 * Math.PI,
+    min: -Math.PI,
+    max: Math.PI,
     axis: 'y',
+    clamp: false,
   },
   trolley: {
     applier: translateDynamicPart,
@@ -110,6 +111,7 @@ const DEGREES_OF_FREEDOM = Object.freeze({
     min: -Math.PI / 4,
     max: 0,
     axis: 'z',
+    clamp: true,
   },
 });
 
@@ -131,7 +133,6 @@ const MOVEMENT_FLAGS_VECTORS = Object.freeze({
 });
 
 const MOVEMENT_TIME = 4000; // miliseconds
-const CLAW_MOVEMENT_SPEED = 10 / 1000; // units/millisecond
 const DELTAS = Object.freeze(
   Object.fromEntries([
     // automatically generate DELTAs for the parts with defined degrees of freedom
@@ -158,9 +159,8 @@ const dynamicElements = {};
 let hudText;
 let pressedKeys = {};
 
-let clawColliding = false,
+let clawDecrease = false,
   clawAnimating = false;
-
 let collidingObject;
 
 const cameras = {
@@ -471,7 +471,7 @@ function createFinger(clawGroup, rot) {
 }
 
 function createContainer() {
-  const containerGroup = createGroup({ x: 8, z: 8, parent: scene });
+  const containerGroup = createGroup({ x: 12, z: 15, parent: scene });
   createBoxMesh({
     name: 'containerFloor',
     y: GEOMETRY.containerFloor.h / 2,
@@ -510,7 +510,7 @@ function createCargo() {
     { type: 'box', name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5 },
     { name: 'object2', x: 16, y: GEOMETRY.object2.r, z: -5, geomFunc: THREE.DodecahedronGeometry },
     { name: 'object3', y: GEOMETRY.object3.r, z: -10, geomFunc: THREE.IcosahedronGeometry },
-    { name: 'object4', x: 10, y: GEOMETRY.object4.r, z: 15, geomFunc: THREE.TorusGeometry },
+    { name: 'object4', x: 0, y: GEOMETRY.object4.r, z: 13, geomFunc: THREE.TorusGeometry },
     {
       name: 'object5',
       x: -13,
@@ -583,57 +583,52 @@ function checkCollisions() {
 /* HANDLE COLLISIONS */
 ///////////////////////
 
-function handleCollisions(timeDelta) {
+function handleCollisions() {
   const containerPos = new THREE.Vector3(),
     clawPos = new THREE.Vector3();
   dynamicElements.claw.getWorldPosition(clawPos);
   dynamicElements.container.getWorldPosition(containerPos);
   dynamicElements.claw.add(collidingObject);
+  collidingObject.position.set(0, -2.5, 0);
 
   const angle = new THREE.Vector3(containerPos.x, 0, containerPos.z).angleTo(
     new THREE.Vector3(clawPos.x, 0, clawPos.z)
   );
 
-  console.log(angle);
-
-  // TODO: fix this sending the trolley far away
-  collidingObject.position.set(0, -2.5, 0);
-  if (GEOMETRY.cable.h !== 0) {
-    transformDynamicPartHandleFactory2({ parts: ['cable', 'claw'], flag: 'yPositive' })(false);
+  if (GEOMETRY.cable.h !== 0 && !clawDecrease) {
+    setAnimation({ parts: ['cable', 'claw'], flag: 'yPositive' }, true);
   } else {
-    if (dynamicElements.trolley.position.x >= 10) {
-      transformDynamicPartHandleFactory2({ parts: ['cable', 'claw'], flag: 'yPositive' })(true);
-      transformDynamicPartHandleFactory2({ parts: ['trolley'], flag: 'xNegative' })(false);
-    }
-    if (Math.abs(angle) > FLOAT_COMPARISON_THRESHOLD) {
-      transformDynamicPartHandleFactory2({ parts: ['top'], flag: 'yPositive' })(false);
+    clawDecrease = true;
+    setAnimation({ parts: ['cable', 'claw'], flag: 'yPositive' }, false);
+    if (dynamicElements.trolley.position.x != GEOMETRY.jib.w - 1) {
+      setAnimation({ parts: ['trolley'], flag: 'xPositive' }, true);
     } else {
-      transformDynamicPartHandleFactory2({ parts: ['top'], flag: 'yPositive' })(true);
+      setAnimation({ parts: ['trolley'], flag: 'xPositive' }, false);
+      if (Math.abs(angle) > FLOAT_COMPARISON_THRESHOLD) {
+        setAnimation({ parts: ['top'], flag: 'yPositive' }, true);
+      } else {
+        setAnimation({ parts: ['top'], flag: 'yPositive' }, false);
+        if (GEOMETRY.cable.h !== 15) {
+          setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, true);
+        } else {
+          setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, false);
+          collidingObject.removeFromParent();
+          clawAnimating = false;
+          clawDecrease = false;
+        }
+      }
     }
   }
-
-  // translateDynamicPart(timeDelta, { part: 'trolley' }, ({ group, timeDelta }) => {
-  //   const direction = new THREE.Vector3(-4, 0, 0);
-
-  //   if (direction.lengthSq() <= FLOAT_COMPARISON_THRESHOLD) {
-  //     return new THREE.Vector3();
-  //   }
-
-  //   const maxMovement = direction.length();
-
-  //   return direction
-  //     .normalize()
-  //     .multiplyScalar(CLAW_MOVEMENT_SPEED * timeDelta)
-  //     .clampLength(0, maxMovement);
-  // });
-
-  // returns false if done with the animation, otherwise returns true
-  return false;
 }
 
-function limitTranslate() {}
+function setAnimation({ parts, flag }, animate) {
+  parts.forEach((part) => {
+    const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
+    const movementFlags = userData.movementFlags || (userData.movementFlags = {});
 
-function limitRotate() {}
+    movementFlags[flag] = animate;
+  });
+}
 
 ////////////
 /* UPDATE */
@@ -641,43 +636,40 @@ function limitRotate() {}
 
 function update(timeDelta) {
   // COMPUTE ANIMATION
-  if (checkCollisions() && handleCollisions(timeDelta)) {
+  if (checkCollisions()) {
     clawAnimating = true;
-    return;
+    handleCollisions();
   }
-  clawAnimating = false;
 
-  CRANE_DYNAMIC_PARTS.forEach((part) => {
-    if (dynamicElements[part.part].userData?.movementFlags) {
-      DEGREES_OF_FREEDOM[part.profile].applier(timeDelta, part);
+  CRANE_DYNAMIC_PARTS.forEach((dynamicPart) => {
+    if (dynamicElements[dynamicPart.part].userData?.movementFlags) {
+      DEGREES_OF_FREEDOM[dynamicPart.profile].applier(timeDelta, dynamicPart);
     }
   });
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
   group.forEach((part) => {
-    rotateGroup(part, props, delta);
+    rotateGroup(part, props, delta, props.clamp);
   });
 }
 
 function rotateDynamicPart(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
-  rotateGroup(group, props, delta);
+  rotateGroup(group, props, delta, props.clamp);
 }
 
-function rotateGroup(group, props, delta) {
+function rotateGroup(group, props, delta, clamp) {
   group.rotation.fromArray(
     ['x', 'y', 'z'].map((axis) => {
       const newValue = group.rotation[axis] + delta[axis];
-      if (props?.axis === axis) {
-        return newValue;
+      if (props?.axis === axis && clamp) {
+        return THREE.MathUtils.clamp(newValue, props.min, props.max);
       }
       return newValue;
     })
@@ -686,7 +678,6 @@ function rotateGroup(group, props, delta) {
 
 function translateDynamicPart(timeDelta, { part, profile }) {
   const group = dynamicElements[part];
-
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
 
@@ -702,8 +693,7 @@ function translateDynamicPart(timeDelta, { part, profile }) {
 }
 
 function resizeCable(timeDelta, { part, profile }) {
-  var group = dynamicElements[part];
-
+  const group = dynamicElements[part];
   const props = DEGREES_OF_FREEDOM[profile];
   const delta = deltaSupplier({ profile, group, timeDelta });
 
@@ -811,8 +801,8 @@ const keyHandlers = {
 };
 
 function changeActiveCameraHandleFactory(cameraDescriptor) {
-  return (_event, isKeyUp) => {
-    if (isKeyUp) {
+  return (event, isKeyUp) => {
+    if (isKeyUp || event.repeat) {
       return;
     }
 
@@ -822,7 +812,7 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 }
 
 function toggleWired() {
-  return (_event, isKeyUp) => {
+  return (event, isKeyUp) => {
     if (isKeyUp || event.repeat) {
       return;
     }
@@ -840,17 +830,6 @@ function transformDynamicPartHandleFactory({ parts, flag }) {
       return;
     }
 
-    parts.forEach((part) => {
-      const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
-      const movementFlags = userData.movementFlags || (userData.movementFlags = {});
-
-      movementFlags[flag] = !isKeyUp;
-    });
-  };
-}
-
-function transformDynamicPartHandleFactory2({ parts, flag }) {
-  return (isKeyUp) => {
     parts.forEach((part) => {
       const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
       const movementFlags = userData.movementFlags || (userData.movementFlags = {});
