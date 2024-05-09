@@ -49,7 +49,7 @@ const GEOMETRY = {
   rearPendant: { r: 0.1, h: 10, rz: -Math.PI / 2.4 },
   frontPendant: { r: 0.1, h: 18.5, rz: Math.PI / 2.2 },
   trolley: { w: 3, h: 2, d: 2 },
-  cable: { r: 0.3, h: 15 },
+  cable: { r: 0.3, h: 10 },
 
   clawWrist: { r: 0.5 },
   clawCollision: { r: 2.5 },
@@ -68,10 +68,9 @@ const GEOMETRY = {
 };
 
 const CAMERA_GEOMETRY = Object.freeze({
-  sceneViewAABB: [new THREE.Vector3(-20, -5, -20), new THREE.Vector3(20, 35, 20)],
-  clawAABB: [new THREE.Vector3(-5, -5, -5), new THREE.Vector3(5, 5, 5)],
-  orthogonalDistance: 30,
-  orthogonalNear: 1,
+  sceneViewAABB: [new THREE.Vector3(-20, -15, -20), new THREE.Vector3(20, 35, 20)],
+  orthogonalDistance: 25,
+  orthogonalNear: 0.5,
   orthogonalFar: 1000,
   perspectiveDistance: 30,
   perspectiveFov: 70,
@@ -506,43 +505,43 @@ function createContainer() {
 
 function createCargo() {
   dynamicElements.objects = [];
+  let createdObject;
   const objects = [
-    { type: 'box', name: 'object1', x: -10, y: GEOMETRY.object1.h / 2, z: -5 },
-    { name: 'object2', x: 16, y: GEOMETRY.object2.r, z: -5, geomFunc: THREE.DodecahedronGeometry },
-    { name: 'object3', y: GEOMETRY.object3.r, z: -10, geomFunc: THREE.IcosahedronGeometry },
-    { name: 'object4', x: 0, y: GEOMETRY.object4.r, z: 13, geomFunc: THREE.TorusGeometry },
+    { type: 'box', name: 'object1', y: GEOMETRY.object1.h / 2 },
+    { name: 'object2', y: GEOMETRY.object2.r, geomFunc: THREE.DodecahedronGeometry },
+    { name: 'object3', y: GEOMETRY.object3.r, geomFunc: THREE.IcosahedronGeometry },
+    { name: 'object4', y: GEOMETRY.object4.r, geomFunc: THREE.TorusGeometry },
     {
       name: 'object5',
-      x: -13,
       y: GEOMETRY.object5.r + 0.8, // 0.4 * 2 is the diameter of the tube
-      z: 13,
       geomFunc: THREE.TorusKnotGeometry,
     },
   ];
 
   objects.forEach((obj) => {
     if (obj.type === 'box') {
-      dynamicElements.objects.push(
-        createBoxMesh({
-          x: obj.x,
-          y: obj.y,
-          z: obj.z,
-          name: obj.name,
-          parent: scene,
-        })
-      );
+      createdObject = createBoxMesh({
+        y: obj.y,
+        name: obj.name,
+        parent: scene,
+      });
     } else {
-      dynamicElements.objects.push(
-        createRadialObjectMesh({
-          x: obj.x,
-          y: obj.y,
-          z: obj.z,
-          name: obj.name,
-          parent: scene,
-          geomFunc: obj.geomFunc,
-        })
-      );
+      createdObject = createRadialObjectMesh({
+        y: obj.y,
+        name: obj.name,
+        parent: scene,
+        geomFunc: obj.geomFunc,
+      });
     }
+
+    const boundingSphere = new THREE.Sphere(); // Create a single sphere for reuse
+    createdObject.geometry.computeBoundingSphere(boundingSphere); // Update sphere for current object
+
+    generateRandomPosition(createdObject);
+    while (checkCollisionsObjects(createdObject)) {
+      generateRandomPosition(createdObject);
+    }
+    dynamicElements.objects.push(createdObject);
   });
 }
 
@@ -550,32 +549,38 @@ function createCargo() {
 /* CHECK COLLISIONS */
 //////////////////////
 
+function colliding(posA, posB, rA, rB) {
+  const squaredSumOfRadius = Math.pow(rA + rB, 2);
+  const squaredDistance =
+    Math.pow(posA.x - posB.x, 2) + Math.pow(posA.y - posB.y, 2) + Math.pow(posA.z - posB.z, 2);
+
+  return squaredDistance <= squaredSumOfRadius;
+}
+
+function checkCollisionsObjects(object) {
+  return dynamicElements.objects
+    .map((child) =>
+      colliding(
+        object.position,
+        child.position,
+        object.geometry.boundingSphere.radius,
+        child.geometry.boundingSphere.radius
+      )
+    )
+    .some((result) => result);
+}
+
 function checkCollisions() {
   let isColliding = false;
   const objPos = new THREE.Vector3();
   const clawPos = new THREE.Vector3();
-  const boundingSphere = new THREE.Sphere(); // Create a single sphere for reuse
+  dynamicElements.claw.getWorldPosition(clawPos);
 
   dynamicElements.objects.forEach((child) => {
     child.getWorldPosition(objPos);
-    child.geometry.computeBoundingSphere(boundingSphere); // Update sphere for current object
-    dynamicElements.claw.getWorldPosition(clawPos);
-
-    const squaredSumOfRadius = Math.pow(
-      child.geometry.boundingSphere.radius + GEOMETRY.clawCollision.r,
-      2
-    );
-    const squaredDistance =
-      Math.pow(clawPos.x - objPos.x, 2) +
-      Math.pow(clawPos.y - objPos.y, 2) +
-      Math.pow(clawPos.z - objPos.z, 2);
-
-    if (squaredDistance < squaredSumOfRadius) {
-      collidingObject = child;
+    if (colliding(clawPos, objPos, GEOMETRY.clawCollision.r, child.geometry.boundingSphere.radius))
       isColliding = true;
-    }
   });
-
   return isColliding;
 }
 
@@ -1008,4 +1013,59 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
 
   parent.add(radialObject);
   return radialObject;
+}
+
+/**
+
+Generates a random position for an object that does not intersect with the container base or the crane base.
+@param {THREE.Object3D} object - The object for which to generate a random position.
+*/
+
+function generateRandomPosition(object) {
+  const CONTAINER_BASE_BOUND = {
+    max: {
+      x: dynamicElements.container.position.x + GEOMETRY.containerFloor.w / 2,
+      z: dynamicElements.container.position.z + GEOMETRY.containerFloor.d / 2,
+    },
+    min: {
+      x: dynamicElements.container.position.x - GEOMETRY.containerFloor.w / 2,
+      z: dynamicElements.container.position.z - GEOMETRY.containerFloor.d / 2,
+    },
+  };
+
+  const CRANE_BASE_BOUND = {
+    max: { x: GEOMETRY.base.w / 2, z: GEOMETRY.base.d / 2 },
+    min: { x: -GEOMETRY.base.w / 2, z: -GEOMETRY.base.d / 2 },
+  };
+
+  const objDim = object.geometry.boundingSphere.radius;
+
+  const max = GEOMETRY.jib.w + GEOMETRY.cab.w / 2 - objDim * 2; //  Objects become reachable
+
+  function getRandomCoordinate(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  let position;
+  do {
+    // Generate random position
+    position = {
+      x: getRandomCoordinate(-max, max),
+      z: getRandomCoordinate(-max, max),
+    };
+    // Check if position falls within the bounds of both BOUNDs
+  } while (
+    // Check against CONTAINER_BASE_BOUND
+    (position.x - objDim <= CONTAINER_BASE_BOUND.max.x &&
+      position.x + objDim >= CONTAINER_BASE_BOUND.min.x &&
+      position.z - objDim <= CONTAINER_BASE_BOUND.max.z &&
+      position.z + objDim >= CONTAINER_BASE_BOUND.min.z) ||
+    // Check against CRANE_BASE_BOUND
+    (position.x + objDim >= CRANE_BASE_BOUND.min.x &&
+      position.x - objDim <= CRANE_BASE_BOUND.max.x &&
+      position.z + objDim >= CRANE_BASE_BOUND.min.z &&
+      position.z - objDim <= CRANE_BASE_BOUND.max.z)
+  );
+
+  object.position.set(position.x, object.position.y, position.z);
 }
