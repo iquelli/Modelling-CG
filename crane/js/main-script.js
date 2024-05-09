@@ -144,8 +144,6 @@ const DELTAS = Object.freeze(
   ])
 );
 
-const CLAW_ANIMATION_TARGET = new THREE.Vector3(4, 0, 4); // cordinates of container's centre
-
 //////////////////////
 /* GLOBAL VARIABLES */
 //////////////////////
