@@ -590,35 +590,38 @@ function handleCollisions() {
   dynamicElements.container.getWorldPosition(containerPos);
   dynamicElements.claw.add(collidingObject);
   collidingObject.position.set(0, -2.5, 0);
-
   const angle = new THREE.Vector3(containerPos.x, 0, containerPos.z).angleTo(
     new THREE.Vector3(clawPos.x, 0, clawPos.z)
   );
 
-  if (GEOMETRY.cable.h !== 0 && !clawDecrease) {
+  if (!clawDecrease && GEOMETRY.cable.h !== 0) {
     setAnimation({ parts: ['cable', 'claw'], flag: 'yPositive' }, true);
-  } else {
-    clawDecrease = true;
-    setAnimation({ parts: ['cable', 'claw'], flag: 'yPositive' }, false);
-    if (dynamicElements.trolley.position.x != GEOMETRY.jib.w - 1) {
-      setAnimation({ parts: ['trolley'], flag: 'xPositive' }, true);
-    } else {
-      setAnimation({ parts: ['trolley'], flag: 'xPositive' }, false);
-      if (Math.abs(angle) > FLOAT_COMPARISON_THRESHOLD) {
-        setAnimation({ parts: ['top'], flag: 'yPositive' }, true);
-      } else {
-        setAnimation({ parts: ['top'], flag: 'yPositive' }, false);
-        if (GEOMETRY.cable.h !== 15) {
-          setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, true);
-        } else {
-          setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, false);
-          collidingObject.removeFromParent();
-          clawAnimating = false;
-          clawDecrease = false;
-        }
-      }
-    }
+    return;
   }
+  clawDecrease = true;
+
+  setAnimation({ parts: ['cable', 'claw'], flag: 'yPositive' }, false);
+  if (dynamicElements.trolley.position.x != GEOMETRY.jib.w - 1) {
+    setAnimation({ parts: ['trolley'], flag: 'xPositive' }, true);
+    return;
+  }
+
+  setAnimation({ parts: ['trolley'], flag: 'xPositive' }, false);
+  if (Math.abs(angle) > FLOAT_COMPARISON_THRESHOLD) {
+    setAnimation({ parts: ['top'], flag: 'yPositive' }, true);
+    return;
+  }
+
+  setAnimation({ parts: ['top'], flag: 'yPositive' }, false);
+  if (GEOMETRY.cable.h !== 15) {
+    setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, true);
+    return;
+  }
+
+  setAnimation({ parts: ['cable', 'claw'], flag: 'yNegative' }, false);
+  collidingObject.removeFromParent();
+  clawAnimating = false;
+  clawDecrease = false;
 }
 
 function setAnimation({ parts, flag }, animate) {
@@ -630,6 +633,17 @@ function setAnimation({ parts, flag }, animate) {
   });
 }
 
+function resetFlags() {
+  CRANE_DYNAMIC_PARTS.forEach((dynamicPart) => {
+    const movementFlags = dynamicElements[dynamicPart.part]?.userData?.movementFlags;
+    if (movementFlags) {
+      Object.keys(movementFlags).forEach((flag) => {
+        movementFlags[flag] = false;
+      });
+    }
+  });
+}
+
 ////////////
 /* UPDATE */
 ////////////
@@ -637,6 +651,9 @@ function setAnimation({ parts, flag }, animate) {
 function update(timeDelta) {
   // COMPUTE ANIMATION
   if (checkCollisions()) {
+    if (!clawAnimating) {
+      resetFlags();
+    }
     clawAnimating = true;
     handleCollisions();
   }
@@ -844,7 +861,7 @@ function transformDynamicPartHandleFactory({ parts, flag }) {
 ///////////////////////
 
 function onKeyDown(e) {
-  let { code } = event;
+  let code = e.code;
 
   // Treat numpad digits like the number row
   if (/^Numpad\d$/.test(code)) {
@@ -853,7 +870,7 @@ function onKeyDown(e) {
 
   if (code in keyHandlers && !clawAnimating) {
     pressedKeys[e.key] = true;
-    keyHandlers[code]?.(event, false);
+    keyHandlers[code]?.(e, false);
     updateHUD();
   }
 }
@@ -863,7 +880,7 @@ function onKeyDown(e) {
 ///////////////////////
 
 function onKeyUp(e) {
-  let { code } = event;
+  let code = e.code;
 
   // Treat numpad digits like the number row
   if (/^Numpad\d$/.test(code)) {
@@ -871,8 +888,8 @@ function onKeyUp(e) {
   }
 
   if (code in keyHandlers) {
-    keyHandlers[code]?.(event, true);
-    delete pressedKeys[e.key];
+    keyHandlers[code]?.(e, true);
+    pressedKeys[e.key] = false;
     updateHUD();
   }
 }
@@ -886,19 +903,15 @@ function onKeyUp(e) {
  */
 function updateHUD() {
   let keys = Object.keys(pressedKeys);
-  if (keys.length > 0) {
-    keys.forEach((key) => {
-      const button = document.getElementById(key.toUpperCase());
-      if (button) {
-        click(button);
-      }
-    });
-  } else {
-    const allButtons = document.querySelectorAll('button');
-    allButtons.forEach((button) => {
+
+  keys.forEach((key) => {
+    const button = document.getElementById(key.toUpperCase());
+    if (button && pressedKeys[key]) {
+      click(button);
+    } else if (button) {
       removeClick(button);
-    });
-  }
+    }
+  });
 }
 
 function click(button) {
