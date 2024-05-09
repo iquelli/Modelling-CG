@@ -1,7 +1,5 @@
 'use strict';
 
-import * as THREE from 'three';
-
 //////////////////////
 /* GLOBAL CONSTANTS */
 //////////////////////
@@ -81,6 +79,3 @@ function onKeyDown(e) {}
 ///////////////////////
 
 function onKeyUp(e) {}
-
-init();
-requestAnimationFrame(animate);
