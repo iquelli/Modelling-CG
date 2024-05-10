@@ -197,7 +197,7 @@ const cameras = {
   // mobile perspective projection
   mobile: createPerspectiveCamera({
     x: 0,
-    y: 3,
+    y: 0.5,
     z: 0,
   }),
 };
