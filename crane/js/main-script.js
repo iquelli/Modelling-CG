@@ -1057,19 +1057,22 @@ function generateRandomPosition(object) {
 
   const objDim = object.geometry.boundingSphere.radius;
 
-  const max = GEOMETRY.jib.w + GEOMETRY.cab.w / 2 - objDim * 2; //  Objects become reachable
+  const max = GEOMETRY.jib.w - 1 + GEOMETRY.cab.w / 2 - objDim; //  Objects become reachable
 
-  function getRandomCoordinate(min, max) {
-    return Math.random() * (max - min) + min;
+  function getRandomCoordinate(max) {
+    const angle = Math.random() * Math.PI * 2; // Generate a random angle
+    const radius = Math.sqrt(Math.random()) * max; // Generate a random radius within the max radius
+
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+
+    return { x, z };
   }
 
   let position;
   do {
     // Generate random position
-    position = {
-      x: getRandomCoordinate(-max, max),
-      z: getRandomCoordinate(-max, max),
-    };
+    position = getRandomCoordinate(max);
     // Check if position falls within the bounds of both BOUNDs
   } while (
     // Check against CONTAINER_BASE_BOUND
