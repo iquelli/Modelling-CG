@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+  Grupo 7
+  Esforço por elemento do grupo: 15 horas
+*/
+
 //////////////////////
 /* GLOBAL CONSTANTS */
 //////////////////////
@@ -539,10 +544,9 @@ function createCargo() {
     const boundingSphere = new THREE.Sphere(); // Create a single sphere for reuse
     createdObject.geometry.computeBoundingSphere(boundingSphere); // Update sphere for current object
 
-    generateRandomPosition(createdObject);
-    while (checkCollisionsObjects(createdObject)) {
+    do {
       generateRandomPosition(createdObject);
-    }
+    } while (checkCollisionsObjects(createdObject));
     dynamicElements.objects.push(createdObject);
   });
 }
@@ -813,7 +817,6 @@ const keyHandlers = {
   Digit7: toggleWired(),
 
   // Rotations and translations
-
   // top
   KeyQ: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yPositive' }),
   KeyA: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yNegative' }),
@@ -1049,15 +1052,13 @@ function generateRandomPosition(object) {
       z: dynamicElements.container.position.z - GEOMETRY.containerFloor.d / 2,
     },
   };
-
   const CRANE_BASE_BOUND = {
     max: { x: GEOMETRY.base.w / 2, z: GEOMETRY.base.d / 2 },
     min: { x: -GEOMETRY.base.w / 2, z: -GEOMETRY.base.d / 2 },
   };
 
   const objDim = object.geometry.boundingSphere.radius;
-
-  const max = GEOMETRY.jib.w - 1 + GEOMETRY.cab.w / 2 - objDim; //  Objects become reachable
+  const max = GEOMETRY.jib.w - 1 + GEOMETRY.cab.w / 2 - objDim; // Objects become reachable
 
   function getRandomCoordinate(max) {
     const angle = Math.random() * Math.PI * 2; // Generate a random angle
@@ -1065,15 +1066,13 @@ function generateRandomPosition(object) {
 
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
-
     return { x, z };
   }
 
   let position;
   do {
-    // Generate random position
     position = getRandomCoordinate(max);
-    // Check if position falls within the bounds of both BOUNDs
+    // Check if position falls within the bounds of ilegal objects
   } while (
     // Check against CONTAINER_BASE_BOUND
     (position.x - objDim <= CONTAINER_BASE_BOUND.max.x &&
