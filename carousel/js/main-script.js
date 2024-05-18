@@ -127,7 +127,6 @@ const CLOCK = new THREE.Clock();
 
 let renderer, scene;
 let activeCamera;
-let prevTimeStamp;
 
 const dynamicElements = {};
 
