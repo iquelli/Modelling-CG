@@ -4,17 +4,16 @@
     <meta charset="utf-8" />
     <title>Carousel</title>
     <link rel="stylesheet" href="css/style.css" />
-    <script src="js/three.min.js"></script>
-    <script src="js/dat.gui.js"></script>
-    <script src="js/Stats.js"></script>
-    <script src="js/OrbitControls.js"></script>
-    <script src="js/VRButton.js"></script>
-    <script src="js/main-script.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@v0.163.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
-    <script>
-      init();
-      requestAnimationFrame(animate);
-    </script>
+    <script type="module" src="js/main-script.js"></script>
   </body>
 </html>

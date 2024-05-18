@@ -1,5 +1,9 @@
 'use strict';
 
+import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+
 /*
   Grupo 7
   Esforço por elemento do grupo: 15 horas
@@ -10,8 +14,6 @@
 //////////////////////
 
 const BACKGROUND = new THREE.Color(0xcbfeff);
-
-const FLOAT_COMPARISON_THRESHOLD = 1e-1;
 
 const MATERIAL = Object.freeze({
   // Main cylinder
@@ -29,7 +31,7 @@ const MATERIAL = Object.freeze({
   figure1: new THREE.MeshBasicMaterial({ color: '#ffbf42' }),
   figure2: new THREE.MeshBasicMaterial({ color: '#ff6f6b' }),
   figure3: new THREE.MeshBasicMaterial({ color: '#FFF06E' }),
-  figure4: new THREE.MeshBasicMaterial({ color: '#F5F8DE ' }),
+  figure4: new THREE.MeshBasicMaterial({ color: '#F5F8DE' }),
   figure5: new THREE.MeshBasicMaterial({ color: '#32ff7e' }),
   figure6: new THREE.MeshBasicMaterial({ color: '#661F99' }),
   figure7: new THREE.MeshBasicMaterial({ color: '#8338EC' }),
@@ -62,7 +64,7 @@ const CAMERA_GEOMETRY = Object.freeze({
   perspectiveFar: 1000,
 });
 
-// degrees of freedom for each profile  TODO: THRE SHOULD BE NEITHER MIN NOR MAX FOR ROTATIONS
+// degrees of freedom for each profile  TODO: THERE SHOULD BE NEITHER MIN NOR MAX FOR ROTATIONS
 const DEGREES_OF_FREEDOM = Object.freeze({
   mainCylinder: {
     applier: rotateDynamicPart,
@@ -89,13 +91,6 @@ const DEGREES_OF_FREEDOM = Object.freeze({
     //max: GEOMETRY.jib.w - 1,
     axis: 'y',
   },
-
-  claw: {
-    applier: translateDynamicPart,
-    //min: -(GEOMETRY.trolley.h / 2 + 15 + GEOMETRY.clawWrist.r),
-    //max: -(GEOMETRY.trolley.h / 2 + GEOMETRY.clawWrist.r),
-    axis: 'y',
-  },
   figure: {
     applier: rotateDynamicParts,
     //min: -Math.PI,
@@ -115,7 +110,7 @@ const CAROUSEL_DYNAMIC_PARTS = Object.freeze([
   { part: 'outerFigures', profile: 'figure' },
 ]);
 
-const MOVEMENT_FLAGS_VECTORS = Object.freeze({
+const MOVEMENT_FLAGS = Object.freeze({
   xPositive: new THREE.Vector3(1, 0, 0),
   xNegative: new THREE.Vector3(-1, 0, 0),
   yPositive: new THREE.Vector3(0, 1, 0),
@@ -124,17 +119,7 @@ const MOVEMENT_FLAGS_VECTORS = Object.freeze({
   zNegative: new THREE.Vector3(0, 0, -1),
 });
 
-const MOVEMENT_TIME = 4000; // miliseconds
-const DELTAS = Object.freeze(
-  Object.fromEntries([
-    // automatically generate DELTAs for the parts with defined degrees of freedom
-    ...Object.entries(DEGREES_OF_FREEDOM).map(([key, { min, max }]) => {
-      const val = (max - min) / MOVEMENT_TIME;
-
-      return [key, val];
-    }),
-  ])
-);
+const CLOCK = new THREE.Clock();
 
 //////////////////////
 /* GLOBAL VARIABLES */
@@ -145,13 +130,6 @@ let activeCamera;
 let prevTimeStamp;
 
 const dynamicElements = {};
-
-let hudText;
-let pressedKeys = {};
-
-let clawDecrease = false,
-  clawAnimating = false;
-let collidingObject;
 
 const cameras = {
   // front view
@@ -343,9 +321,6 @@ function refreshCameraParameters({ getCameraParameters, camera }) {
 
 function createCarousel() {
   const cylinderGroup = createGroup({ parent: scene });
-  const innerGroup = createGroup({ parent: cylinderGroup });
-  const centralGroup = createGroup({ parent: cylinderGroup });
-  const outerGroup = createGroup({ parent: scene });
 
   createMainCylinder(cylinderGroup);
   createInnerRing(cylinderGroup);
@@ -412,34 +387,6 @@ function createMobiusStrip() {
 /////////////////////
 /* CREATE LIGHT(S) */
 /////////////////////
-
-//////////////////////
-/* CHECK COLLISIONS */
-//////////////////////
-
-///////////////////////
-/* HANDLE COLLISIONS */
-///////////////////////
-
-function setAnimation({ parts, flag }, animate) {
-  parts.forEach((part) => {
-    const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
-    const movementFlags = userData.movementFlags || (userData.movementFlags = {});
-
-    movementFlags[flag] = animate;
-  });
-}
-
-function resetFlags() {
-  CRANE_DYNAMIC_PARTS.forEach((dynamicPart) => {
-    const movementFlags = dynamicElements[dynamicPart.part]?.userData?.movementFlags;
-    if (movementFlags) {
-      Object.keys(movementFlags).forEach((flag) => {
-        movementFlags[flag] = false;
-      });
-    }
-  });
-}
 
 ////////////
 /* UPDATE */
@@ -524,14 +471,15 @@ function init() {
   renderer = new THREE.WebGLRenderer({
     antialias: true,
   });
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  renderer.xr.enabled = true;
+  document.body.appendChild(VRButton.createButton(renderer));
+
   createScene();
   createCameras();
-
-  // Create HUD text
-  hudText = document.getElementById('controls');
 
   // Event listeners for keypresses
   window.addEventListener('keydown', onKeyDown);
@@ -543,13 +491,11 @@ function init() {
 /* ANIMATION CYCLE */
 /////////////////////
 
-function animate(timestamp) {
-  const timeDelta = timestamp - prevTimeStamp;
-
+function animate() {
+  const timeDelta = CLOCK.getDelta();
   update(timeDelta);
   render();
-  prevTimeStamp = timestamp;
-  requestAnimationFrame(animate);
+  renderer.setAnimationLoop(animate);
 }
 
 ////////////////////////////
@@ -570,29 +516,25 @@ function onResize() {
 
 const keyHandlers = {
   // Cameras
-  Digit1: changeActiveCameraHandleFactory(cameras.front),
-  Digit2: changeActiveCameraHandleFactory(cameras.side),
-  Digit3: changeActiveCameraHandleFactory(cameras.top),
-  Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
-  Digit5: changeActiveCameraHandleFactory(cameras.perspective),
-  Digit6: changeActiveCameraHandleFactory(cameras.mobile),
-
-  // Wireframe
-  Digit7: toggleWired(),
-
+  // Digit1: changeActiveCameraHandleFactory(cameras.front),
+  // Digit2: changeActiveCameraHandleFactory(cameras.side),
+  // Digit3: changeActiveCameraHandleFactory(cameras.top),
+  // Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
+  // Digit5: changeActiveCameraHandleFactory(cameras.perspective),
+  // Digit6: changeActiveCameraHandleFactory(cameras.mobile),
   // Rotations and translations
   // top
-  KeyQ: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yPositive' }),
-  KeyA: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yNegative' }),
+  // KeyQ: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yPositive' }),
+  // KeyA: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yNegative' }),
   // trolley
-  KeyW: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xPositive' }),
-  KeyS: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xNegative' }),
+  // KeyW: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xPositive' }),
+  // KeyS: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xNegative' }),
   // cable and claw
-  KeyE: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yPositive' }),
-  KeyD: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yNegative' }),
+  // KeyE: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yPositive' }),
+  // KeyD: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yNegative' }),
   // fingers
-  KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
-  KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
+  // KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
+  // KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
 };
 
 function changeActiveCameraHandleFactory(cameraDescriptor) {
@@ -603,18 +545,6 @@ function changeActiveCameraHandleFactory(cameraDescriptor) {
 
     refreshCameraParameters(cameraDescriptor);
     activeCamera = cameraDescriptor;
-  };
-}
-
-function toggleWired() {
-  return (event, isKeyUp) => {
-    if (isKeyUp || event.repeat) {
-      return;
-    }
-
-    for (const material of Object.values(MATERIAL)) {
-      material.wireframe = !material.wireframe;
-    }
   };
 }
 
@@ -649,7 +579,6 @@ function onKeyDown(e) {
   if (code in keyHandlers && !clawAnimating) {
     pressedKeys[e.key] = true;
     keyHandlers[code]?.(e, false);
-    updateHUD();
   }
 }
 
@@ -668,40 +597,12 @@ function onKeyUp(e) {
   if (code in keyHandlers) {
     keyHandlers[code]?.(e, true);
     pressedKeys[e.key] = false;
-    updateHUD();
   }
 }
 
 ///////////////
 /* UTILITIES */
 ///////////////
-
-/**
- * Update HUD to display pressed keys
- */
-function updateHUD() {
-  let keys = Object.keys(pressedKeys);
-
-  keys.forEach((key) => {
-    const button = document.getElementById(key.toUpperCase());
-    if (button && pressedKeys[key]) {
-      click(button);
-    } else if (button) {
-      removeClick(button);
-    }
-  });
-}
-
-function click(button) {
-  button.style.backgroundColor = '#d0d0d0';
-  button.style.transform = 'translateY(1px)';
-}
-
-function removeClick(button) {
-  // Reset to default value
-  button.style.backgroundColor = '';
-  button.style.transform = '';
-}
 
 /**
  * Create a THREE.Group on the given position and with the given scale.
@@ -794,7 +695,7 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
   geometry.absarc(0, 0, or, 0, Math.PI * 2, false);
 
   var extrudeSettings = {
-    amount: h,
+    depth: h,
     steps: 1,
     bevelEnabled: false,
     curveSegments: radialSegments,
@@ -834,3 +735,6 @@ function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc })
   parent.add(radialObject);
   return radialObject;
 }
+
+init();
+animate();
