@@ -54,62 +54,25 @@ const GEOMETRY = {
   smallFigure: { r: 2 },
 };
 
-// degrees of freedom for each profile  TODO: THERE SHOULD BE NEITHER MIN NOR MAX FOR ROTATIONS
-const DEGREES_OF_FREEDOM = Object.freeze({
-  mainCylinder: {
-    applier: rotateDynamicPart,
-    min: -Math.PI,
-    max: Math.PI,
-    axis: 'y',
-    clamp: false,
-  },
-  outerRing: {
-    applier: translateDynamicPart,
-    //min: GEOMETRY.cab.w / 2 + GEOMETRY.trolley.w / 2,
-    //max: GEOMETRY.jib.w - 1,
-    axis: 'y',
-  },
-  centralRing: {
-    applier: translateDynamicPart,
-    //min: GEOMETRY.cab.w / 2 + GEOMETRY.trolley.w / 2,
-    //max: GEOMETRY.jib.w - 1,
-    axis: 'y',
-  },
-  innerRing: {
-    applier: translateDynamicPart,
-    //min: GEOMETRY.cab.w / 2 + GEOMETRY.trolley.w / 2,
-    //max: GEOMETRY.jib.w - 1,
-    axis: 'y',
-  },
-  figure: {
-    applier: rotateDynamicParts,
-    //min: -Math.PI,
-    //max: Math.PI,
-    axis: 'y',
-    clamp: true,
-  },
-});
-
+// degrees of freedom for each profile
+const DEGREES_OF_FREEDOM = {
+  figures: { applier: translateDynamicPart, min: 0, max: 8, axis: 'y' },
+  ring: { applier: resizeDynamicPart, min: 4, max: 12, axis: 'y' },
+};
 const CAROUSEL_DYNAMIC_PARTS = Object.freeze([
-  { part: 'mainCylinder', profile: 'mainCylinder' },
-  { part: 'outerRing', profile: 'outerRing' },
-  { part: 'centralRing', profile: 'centralRing' },
-  { part: 'innerRing', profile: 'innerRing' },
-  { part: 'innerFigures', profile: 'figure' },
-  { part: 'centralFigures', profile: 'figure' },
-  { part: 'outerFigures', profile: 'figure' },
+  { part: 'innerFigures', profile: 'figures' },
+  { part: 'centralFigures', profile: 'figures' },
+  { part: 'outerFigures', profile: 'figures' },
+  { part: 'innerRing', profile: 'ring' },
+  { part: 'centralRing', profile: 'ring' },
+  { part: 'outerRing', profile: 'ring' },
 ]);
 
-const MOVEMENT_FLAGS = Object.freeze({
-  xPositive: new THREE.Vector3(1, 0, 0),
-  xNegative: new THREE.Vector3(-1, 0, 0),
-  yPositive: new THREE.Vector3(0, 1, 0),
-  yNegative: new THREE.Vector3(0, -1, 0),
-  zPositive: new THREE.Vector3(0, 0, 1),
-  zNegative: new THREE.Vector3(0, 0, -1),
-});
-
 const CLOCK = new THREE.Clock();
+
+const BASE_ANGULAR_VELOCITY = (2 * Math.PI) / 10; // 10 seconds for one rotation
+const FIGURE_ANGULAR_VELOCITY = (2 * Math.PI) / 5; // 5 seconds for one rotation
+const RING_LINEAR_VELOCITY = 5; // 5 units per second
 
 const ORBITAL_CAMERA = createPerspectiveCamera({
   fov: 80,
@@ -135,7 +98,10 @@ const FIXED_CAMERA = createPerspectiveCamera({
 let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
-const dynamicElements = {};
+// for translations and rotations
+let baseGroup;
+const ringElements = {};
+const figures = [];
 
 // flags for event handlers
 let updateProjectionMatrix = false;
@@ -200,48 +166,55 @@ function refreshCameraParameters(camera) {
 ////////////////////////
 
 function createCarousel() {
-  const cylinderGroup = createGroup({ parent: scene });
+  baseGroup = createGroup({ parent: scene });
 
-  createMainCylinder(cylinderGroup);
-  createInnerRing(cylinderGroup);
-  createCentralRing(cylinderGroup);
-  createOuterRing(cylinderGroup);
+  createMainCylinder(baseGroup);
+  createInnerRing(baseGroup);
+  createCentralRing(baseGroup);
+  createOuterRing(baseGroup);
   createMobiusStrip();
 }
 
-function createMainCylinder(cylinderGroup) {
+function createMainCylinder(baseGroup) {
   createCylinderMesh({
     name: 'mainCylinder',
     y: GEOMETRY.mainCylinder.h / 2,
-    parent: cylinderGroup,
+    parent: baseGroup,
   });
 }
 
-function createInnerRing(cylinderGroup) {
-  createRingMesh({
+function createInnerRing(baseGroup) {
+  ringElements.innerRing = createRingMesh({
     name: 'innerRing',
     y: GEOMETRY.innerRing.h,
-    parent: cylinderGroup,
+    parent: baseGroup,
   });
+  ringElements.innerFigures = createGroup({ y: GEOMETRY.innerRing.h, parent: baseGroup });
+  // TODO: create the inner figures and add them to the group above
 }
 
-function createCentralRing(cylinderGroup) {
-  createRingMesh({
+function createCentralRing(baseGroup) {
+  ringElements.centralRing = createRingMesh({
     name: 'centralRing',
     y: GEOMETRY.centralRing.h,
-    parent: cylinderGroup,
+    parent: baseGroup,
   });
+  ringElements.centralFigures = createGroup({ y: GEOMETRY.centralRing.h, parent: baseGroup });
+  // TODO: create the central figures and add them to the group above
 }
 
-function createOuterRing(cylinderGroup) {
-  createRingMesh({
+function createOuterRing(baseGroup) {
+  ringElements.outerRing = createRingMesh({
     name: 'outerRing',
     y: GEOMETRY.outerRing.h,
-    parent: cylinderGroup,
+    parent: baseGroup,
   });
+  ringElements.outerFigures = createGroup({ y: GEOMETRY.outerRing.h, parent: baseGroup });
+  // TODO: create the outer figures and add them to the group above
 }
 
 function createMobiusStrip() {
+  // TODO: change it to the teacher's liking
   const strip = new THREE.Object3D();
   strip.position.set(0, 22, 0);
   scene.add(strip);
@@ -273,12 +246,17 @@ function createMobiusStrip() {
 ////////////
 
 function update(timeDelta) {
-  // COMPUTE ANIMATION
-  /* CAROUSEL_DYNAMIC_PARTS.forEach((dynamicPart) => {
-      if (dynamicElements[dynamicPart.part].userData?.movementFlags) {
-        DEGREES_OF_FREEDOM[dynamicPart.profile].applier(timeDelta, dynamicPart);
-      }
-    });*/
+  baseGroup.rotation.y = (baseGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
+  figures.forEach((figure) => {
+    figure.rotation.y = (figure.rotation.y + timeDelta * FIGURE_ANGULAR_VELOCITY) % (2 * Math.PI);
+  });
+
+  // COMPUTE ANIMATION FOR RINGS
+  CAROUSEL_DYNAMIC_PARTS.forEach((dynamicPart) => {
+    if (ringElements[dynamicPart.part]?.movementFlag) {
+      DEGREES_OF_FREEDOM[dynamicPart.profile].applier(timeDelta, dynamicPart);
+    }
+  });
 
   if (updateProjectionMatrix) {
     const isXrPresenting = renderer.xr.isPresenting;
@@ -298,58 +276,30 @@ function update(timeDelta) {
   }
 }
 
-function rotateDynamicParts(timeDelta, { part, profile }) {
-  const group = dynamicElements[part];
-  const props = DEGREES_OF_FREEDOM[profile];
-  const delta = deltaSupplier({ profile, group, timeDelta });
-  group.forEach((part) => {
-    rotateGroup(part, props, delta, props.clamp);
-  });
-}
-
-function rotateDynamicPart(timeDelta, { part, profile }) {
-  const group = dynamicElements[part];
-  const props = DEGREES_OF_FREEDOM[profile];
-  const delta = deltaSupplier({ profile, group, timeDelta });
-  rotateGroup(group, props, delta, props.clamp);
-}
-
-function rotateGroup(group, props, delta, clamp) {
-  group.rotation.fromArray(
-    ['x', 'y', 'z'].map((axis) => {
-      const newValue = group.rotation[axis] + delta[axis];
-      if (props?.axis === axis && clamp) {
-        return THREE.MathUtils.clamp(newValue, props.min, props.max);
-      }
-      return newValue;
-    })
-  );
-}
-
 function translateDynamicPart(timeDelta, { part, profile }) {
-  const group = dynamicElements[part];
-  const props = DEGREES_OF_FREEDOM[profile];
-  const delta = deltaSupplier({ profile, group, timeDelta });
-
-  group.position.fromArray(
-    ['x', 'y', 'z'].map((axis) => {
-      const newValue = group.position[axis] + delta[axis];
-      if (props?.axis === axis) {
-        return THREE.MathUtils.clamp(newValue, props.min, props.max);
-      }
-      return newValue;
-    })
-  );
+  // TODO
+  // const group = dynamicElements[part];
+  // const props = DEGREES_OF_FREEDOM[profile];
+  // const delta = deltaSupplier({ profile, group, timeDelta });
+  // group.position.fromArray(
+  //   ['x', 'y', 'z'].map((axis) => {
+  //     const newValue = group.position[axis] + delta[axis];
+  //     if (props?.axis === axis) {
+  //       return THREE.MathUtils.clamp(newValue, props.min, props.max);
+  //     }
+  //     return newValue;
+  //   })
+  // );
 }
 
-function deltaSupplier({ profile, group, timeDelta }) {
-  return Object.entries(group?.userData?.movementFlags || {})
-    .filter(([_flagKey, flagValue]) => flagValue)
-    .reduce((vec, [flagKey, _flagValue]) => {
-      return vec.add(MOVEMENT_FLAGS_VECTORS[flagKey]);
-    }, new THREE.Vector3())
-    .normalize()
-    .multiplyScalar(DELTAS[profile] * timeDelta);
+function resizeDynamicPart(timeDelta, { part, profile }) {
+  // TODO
+  // const group = dynamicElements[part];
+  // const props = DEGREES_OF_FREEDOM[profile];
+  // const delta = deltaSupplier({ profile, group, timeDelta });
+  // GEOMETRY.cable.h = THREE.MathUtils.clamp(GEOMETRY.cable.h - delta['y'], props.min, props.max);
+  // group.position.setY(-(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2);
+  // group.scale.set(1, GEOMETRY.cable.h / 9); // 9 is the default length of the cable
 }
 
 /////////////
@@ -408,26 +358,10 @@ function onResize() {
 //////////////////
 
 const keyHandlers = {
-  // Cameras
-  // Digit1: changeActiveCameraHandleFactory(cameras.front),
-  // Digit2: changeActiveCameraHandleFactory(cameras.side),
-  // Digit3: changeActiveCameraHandleFactory(cameras.top),
-  // Digit4: changeActiveCameraHandleFactory(cameras.orthogonal),
-  // Digit5: changeActiveCameraHandleFactory(cameras.perspective),
-  // Digit6: changeActiveCameraHandleFactory(cameras.mobile),
-  // Rotations and translations
-  // top
-  // KeyQ: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yPositive' }),
-  // KeyA: transformDynamicPartHandleFactory({ parts: ['top'], flag: 'yNegative' }),
-  // trolley
-  // KeyW: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xPositive' }),
-  // KeyS: transformDynamicPartHandleFactory({ parts: ['trolley'], flag: 'xNegative' }),
-  // cable and claw
-  // KeyE: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yPositive' }),
-  // KeyD: transformDynamicPartHandleFactory({ parts: ['cable', 'claw'], flag: 'yNegative' }),
-  // fingers
-  // KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
-  // KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
+  // Move the rings up and down with the figures on top
+  Digit1: movementHandleFactory(['innerFigures', 'innerRing']),
+  Digit2: movementHandleFactory(['centralFigures', 'centralRing']),
+  Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
 
   // EXTRA
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
@@ -438,8 +372,8 @@ const keyHandlers = {
  * Ignores the keyup event, as well as duplicate keydown events.
  */
 function keyActionFactory(handler) {
-  return (event, isDown) => {
-    if (!isDown || event.repeat) {
+  return (event, isKeyDown) => {
+    if (!isKeyDown || event.repeat) {
       return;
     }
 
@@ -447,29 +381,15 @@ function keyActionFactory(handler) {
   };
 }
 
-function changeActiveCameraHandleFactory(cameraDescriptor) {
-  return (event, isKeyUp) => {
-    if (isKeyUp || event.repeat) {
-      return;
-    }
-
-    refreshCameraParameters(cameraDescriptor);
-    activeCamera = cameraDescriptor;
-  };
-}
-
-function transformDynamicPartHandleFactory({ parts, flag }) {
-  return (event, isKeyUp) => {
+function movementHandleFactory(parts) {
+  return (event, isKeyDown) => {
     if (event.repeat) {
       // ignore holding down keys
       return;
     }
 
     parts.forEach((part) => {
-      const userData = dynamicElements[part].userData || (dynamicElements[part].userData = {});
-      const movementFlags = userData.movementFlags || (userData.movementFlags = {});
-
-      movementFlags[flag] = !isKeyUp;
+      ringElements[part].movementFlag = isKeyDown;
     });
   };
 }
@@ -523,46 +443,7 @@ function createGroup({ x = 0, y = 0, z = 0, scale = [1, 1, 1], parent }) {
   } else {
     scene.add(group);
   }
-
   return group;
-}
-
-/**
- * Create a THREE.Mesh with BoxGeometry, on the given position and with the scaling
- * from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createBoxMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { w, h, d, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.BoxGeometry(w, h, d);
-
-  const box = new THREE.Mesh(geometry, material);
-  box.position.set(x, y, z);
-  box.rotation.set(rx, ry, rz);
-
-  parent.add(box);
-  return box;
-}
-
-/**
- * Create a Pyramid THREE.Mesh with CylinderGeometry, on the given position and with the scaling
- * and rotation from the given profile (`name`).
- *
- * Automatically adds the created Mesh to the given parent.
- */
-function createPyramidMesh({ name, x = 0, y = 0, z = 0, parent }) {
-  const { l, h, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new THREE.CylinderGeometry(0, l / Math.sqrt(2), h, 4);
-
-  const pyramid = new THREE.Mesh(geometry, material);
-  pyramid.position.set(x, y, z);
-  pyramid.rotation.set(rx, ry, rz);
-
-  parent.add(pyramid);
-  return pyramid;
 }
 
 /**
@@ -588,6 +469,12 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
   return cylinder;
 }
 
+/**
+ * Create a THREE.Mesh with ExtrudeGeometry, on the given position and with the scaling
+ * and rotation from the given profile (`name`).
+ *
+ * Automatically adds the created Mesh to the given parent.
+ */
 function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
   const { ir, or, h, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
   const material = MATERIAL[name];
@@ -623,21 +510,20 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
 }
 
 /**
- * Create a THREE.Mesh with the geomFunc, on the given position and with the scaling
+ * Create a THREE.Mesh with THREE.ParametricGeometry, on the given position and with the scaling
  * from the given profile (`name`).
  *
  * Automatically adds the created Mesh to the given parent.
  */
-function createRadialObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc }) {
-  const { r } = GEOMETRY[name];
-  const material = MATERIAL[name];
-  const geometry = new geomFunc(r);
-
-  const radialObject = new THREE.Mesh(geometry, material);
-  radialObject.position.set(x, y, z);
-
-  parent.add(radialObject);
-  return radialObject;
+function createObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc }) {
+  // TODO
+  // const { r } = GEOMETRY[name];
+  // const material = MATERIAL[name];
+  // const geometry = new geomFunc(r);
+  // const radialObject = new THREE.Mesh(geometry, material);
+  // radialObject.position.set(x, y, z);
+  // parent.add(radialObject);
+  // return radialObject;
 }
 
 init();
