@@ -190,26 +190,6 @@ function createPerspectiveCamera({
   return camera;
 }
 
-function createOrthographicCamera({
-  left,
-  right,
-  top,
-  bottom,
-  near,
-  far,
-  x = 0,
-  y = 0,
-  z = 0,
-  atX = 0,
-  atY = 0,
-  atZ = 0,
-}) {
-  const camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
-  camera.position.set(x, y, z);
-  camera.lookAt(atX, atY, atZ);
-  return camera;
-}
-
 function refreshCameraParameters(camera) {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
