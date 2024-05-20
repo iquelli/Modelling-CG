@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 /*
   Grupo 7
@@ -52,17 +53,6 @@ const GEOMETRY = {
   mediumFigure: { r: 1.5 },
   smallFigure: { r: 2 },
 };
-
-const CAMERA_GEOMETRY = Object.freeze({
-  sceneViewAABB: [new THREE.Vector3(-20, -15, -20), new THREE.Vector3(20, 35, 20)],
-  orthogonalDistance: 25,
-  orthogonalNear: 0.5,
-  orthogonalFar: 1000,
-  perspectiveDistance: 30,
-  perspectiveFov: 70,
-  perspectiveNear: 1,
-  perspectiveFar: 1000,
-});
 
 // degrees of freedom for each profile  TODO: THERE SHOULD BE NEITHER MIN NOR MAX FOR ROTATIONS
 const DEGREES_OF_FREEDOM = Object.freeze({
@@ -121,56 +111,31 @@ const MOVEMENT_FLAGS = Object.freeze({
 
 const CLOCK = new THREE.Clock();
 
+const ORBITAL_CAMERA = createPerspectiveCamera({
+    fov: 80,
+    near: 1,
+    far: 1000,
+    x: -10,
+    y: 20,
+    z: -10,
+  });
+const FIXED_CAMERA = createPerspectiveCamera({
+    fov: 80,
+    near: 1,
+    far: 1000,
+    x: -32,
+    y: 40,
+    z: -50,
+});
+
 //////////////////////
 /* GLOBAL VARIABLES */
 //////////////////////
 
 let renderer, scene;
-let activeCamera;
+let activeCamera = FIXED_CAMERA;
 
 const dynamicElements = {};
-
-const cameras = {
-  // front view
-  front: createOrthogonalCamera({
-    bottomAxisVector: new THREE.Vector3(-1, 0, 0), // X axis
-    sideAxisVector: new THREE.Vector3(0, 1, 0), // Y axis
-    z: CAMERA_GEOMETRY.orthogonalDistance,
-  }),
-  // side view
-  side: createOrthogonalCamera({
-    bottomAxisVector: new THREE.Vector3(0, 0, -1), // Z axis
-    sideAxisVector: new THREE.Vector3(0, 1, 0), // Y axis
-    x: CAMERA_GEOMETRY.orthogonalDistance,
-  }),
-  // top view
-  top: createOrthogonalCamera({
-    bottomAxisVector: new THREE.Vector3(1, 0, 0), // X axis
-    sideAxisVector: new THREE.Vector3(0, 0, -1), // Z axis
-    mirrorView: true,
-    y: CAMERA_GEOMETRY.orthogonalDistance,
-  }),
-  // orthogonal projection: isometric view
-  orthogonal: createOrthogonalCamera({
-    bottomAxisVector: new THREE.Vector3(1, 0, 1).normalize(),
-    sideAxisVector: new THREE.Vector3(0, 1, 0), // Y axis
-    x: CAMERA_GEOMETRY.perspectiveDistance,
-    y: CAMERA_GEOMETRY.perspectiveDistance,
-    z: CAMERA_GEOMETRY.perspectiveDistance,
-  }),
-  // perspective projection: isometric view
-  perspective: createPerspectiveCamera({
-    x: CAMERA_GEOMETRY.perspectiveDistance,
-    y: CAMERA_GEOMETRY.perspectiveDistance,
-    z: CAMERA_GEOMETRY.perspectiveDistance,
-  }),
-  // mobile perspective projection
-  mobile: createPerspectiveCamera({
-    x: 0,
-    y: 0.5,
-    z: 0,
-  }),
-};
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -191,127 +156,60 @@ function createScene() {
 //////////////////////
 
 function createCameras() {
-  // set the initial camera
-  activeCamera = cameras.front;
-
-  Object.values(cameras).forEach((cameraDescriptor) => {
-    refreshCameraParameters(cameraDescriptor);
-    cameraDescriptor.camera.lookAt(scene.position);
-  });
+    const controls = new OrbitControls(ORBITAL_CAMERA, renderer.domElement);
+    controls.target.set(0, 0, 0);
+    controls.keys = {
+      LEFT: 72, // h
+      UP: 75, // k
+      RIGHT: 76, // l
+      BOTTOM: 74, // j
+    };
+    controls.update();
 }
-
-function getVisibleAreaBoundingBox() {
-  return {
-    min: CAMERA_GEOMETRY.sceneViewAABB[0],
-    max: CAMERA_GEOMETRY.sceneViewAABB[1],
-  };
+  
+function createPerspectiveCamera({
+    fov,
+    near,
+    far,
+    x = 0,
+    y = 0,
+    z = 0,
+    atX = 0,
+    atY = 0,
+    atZ = 0,
+  }) {
+    const aspect = window.innerWidth / window.innerHeight;
+  
+    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    camera.position.set(x, y, z);
+    camera.lookAt(atX, atY, atZ);
+    return camera;
 }
-
-/**
- * Create an orthogonal camera with the given parameters.
- *
- * @param {Object} parameters - The camera parameters.
- * @param {THREE.Vector3} parameters.bottomAxisVector - A normalized vector along the bottom axis.
- * Its direction depends from where the camera is facing.
- * @param {THREE.Vector3} parameters.sideAxisVector - A normalized vector along the side axis.
- * Its direction depends from where the camera is facing.
- * @param {int} parameters.x - The X position of the camera.
- * @param {int} parameters.y - The Y position of the camera.
- * @param {int} parameters.z - The Z position of the camera.
- * @param {boolean} parameters.mirrorView - Whether to mirror the camera vertically and horizontally.
- * @returns {THREE.OrthographicCamera} The created camera.
- */
-function createOrthogonalCamera({
-  bottomAxisVector,
-  sideAxisVector,
-  x = 0,
-  y = 0,
-  z = 0,
-  mirrorView = false,
-}) {
-  const getCameraParameters = () => {
-    const { min, max } = getVisibleAreaBoundingBox();
-
-    const maxLeft = bottomAxisVector.dot(max);
-    const minRight = bottomAxisVector.dot(min);
-    const minTop = sideAxisVector.dot(max);
-    const maxBottom = sideAxisVector.dot(min);
-
-    const minWidth = Math.abs(minRight - maxLeft);
-    const minHeight = Math.abs(minTop - maxBottom);
-    const offsetX = (minRight + maxLeft) / 2;
-    const offsetY = (minTop + maxBottom) / 2;
-
-    const aspectRatio = window.innerWidth / window.innerHeight;
-    let height = minHeight;
-    let width = height * aspectRatio;
-
-    // fit to aspect ratio
-    if (width < minWidth) {
-      width = minWidth;
-      height = width / aspectRatio;
-    }
-
-    // correctly orient top-down camera
-    if (mirrorView) {
-      height = -height;
-      width = -width;
-    }
-
-    const top = height / 2 + offsetY;
-    const bottom = -height / 2 + offsetY;
-    const left = -width / 2 + offsetX;
-    const right = width / 2 + offsetX;
-
-    return { top, bottom, left, right };
-  };
-
-  const { top, bottom, left, right } = getCameraParameters();
-
-  const camera = new THREE.OrthographicCamera(
+  
+function createOrthographicCamera({
     left,
     right,
     top,
     bottom,
-    CAMERA_GEOMETRY.orthogonalNear,
-    CAMERA_GEOMETRY.orthogonalFar
-  );
-  camera.position.set(x, y, z);
-
-  return { getCameraParameters, camera };
+    near,
+    far,
+    x = 0,
+    y = 0,
+    z = 0,
+    atX = 0,
+    atY = 0,
+    atZ = 0,
+}) {
+    const camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
+    camera.position.set(x, y, z);
+    camera.lookAt(atX, atY, atZ);
+    return camera;
 }
-
-function createPerspectiveCamera({ x = 0, y = 0, z = 0 }) {
-  const getCameraParameters = () => {
-    return { aspect: window.innerWidth / window.innerHeight };
-  };
-
-  const { aspect } = getCameraParameters();
-
-  const camera = new THREE.PerspectiveCamera(
-    CAMERA_GEOMETRY.perspectiveFov,
-    aspect,
-    CAMERA_GEOMETRY.perspectiveNear,
-    CAMERA_GEOMETRY.perspectiveFar
-  );
-  camera.position.set(x, y, z);
-
-  return { getCameraParameters, camera };
-}
-
-/**
- * Given a camera descriptor, calls the `getCameraParameters` function
- * to get the attributes to override on the THREE.Camera object.
- * This function is given by the camera descriptor, from the `createOrthogonalCamera`
- * or the `createPerspectiveCamera` functions.
- *
- * Finally, updates the projection matrix of the camera.
- */
-function refreshCameraParameters({ getCameraParameters, camera }) {
-  const parameters = getCameraParameters();
-
-  Object.assign(camera, parameters);
-  camera.updateProjectionMatrix();
+  
+  
+function refreshCameraParameters(camera) {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
 }
 
 ////////////////////////
@@ -459,7 +357,7 @@ function deltaSupplier({ profile, group, timeDelta }) {
 /////////////
 
 function render() {
-  renderer.render(scene, activeCamera.camera);
+  renderer.render(scene, activeCamera);
 }
 
 ////////////////////////////////
