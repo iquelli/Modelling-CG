@@ -112,20 +112,20 @@ const MOVEMENT_FLAGS = Object.freeze({
 const CLOCK = new THREE.Clock();
 
 const ORBITAL_CAMERA = createPerspectiveCamera({
-    fov: 80,
-    near: 1,
-    far: 1000,
-    x: -10,
-    y: 20,
-    z: -10,
-  });
+  fov: 80,
+  near: 1,
+  far: 1000,
+  x: -10,
+  y: 20,
+  z: -10,
+});
 const FIXED_CAMERA = createPerspectiveCamera({
-    fov: 80,
-    near: 1,
-    far: 1000,
-    x: -32,
-    y: 40,
-    z: -50,
+  fov: 80,
+  near: 1,
+  far: 1000,
+  x: -32,
+  y: 40,
+  z: -50,
 });
 
 //////////////////////
@@ -156,60 +156,59 @@ function createScene() {
 //////////////////////
 
 function createCameras() {
-    const controls = new OrbitControls(ORBITAL_CAMERA, renderer.domElement);
-    controls.target.set(0, 0, 0);
-    controls.keys = {
-      LEFT: 72, // h
-      UP: 75, // k
-      RIGHT: 76, // l
-      BOTTOM: 74, // j
-    };
-    controls.update();
+  const controls = new OrbitControls(ORBITAL_CAMERA, renderer.domElement);
+  controls.target.set(0, 0, 0);
+  controls.keys = {
+    LEFT: 72, // h
+    UP: 75, // k
+    RIGHT: 76, // l
+    BOTTOM: 74, // j
+  };
+  controls.update();
 }
-  
+
 function createPerspectiveCamera({
-    fov,
-    near,
-    far,
-    x = 0,
-    y = 0,
-    z = 0,
-    atX = 0,
-    atY = 0,
-    atZ = 0,
-  }) {
-    const aspect = window.innerWidth / window.innerHeight;
-  
-    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    camera.position.set(x, y, z);
-    camera.lookAt(atX, atY, atZ);
-    return camera;
-}
-  
-function createOrthographicCamera({
-    left,
-    right,
-    top,
-    bottom,
-    near,
-    far,
-    x = 0,
-    y = 0,
-    z = 0,
-    atX = 0,
-    atY = 0,
-    atZ = 0,
+  fov,
+  near,
+  far,
+  x = 0,
+  y = 0,
+  z = 0,
+  atX = 0,
+  atY = 0,
+  atZ = 0,
 }) {
-    const camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
-    camera.position.set(x, y, z);
-    camera.lookAt(atX, atY, atZ);
-    return camera;
+  const aspect = window.innerWidth / window.innerHeight;
+
+  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.set(x, y, z);
+  camera.lookAt(atX, atY, atZ);
+  return camera;
 }
-  
-  
+
+function createOrthographicCamera({
+  left,
+  right,
+  top,
+  bottom,
+  near,
+  far,
+  x = 0,
+  y = 0,
+  z = 0,
+  atX = 0,
+  atY = 0,
+  atZ = 0,
+}) {
+  const camera = new THREE.OrthographicCamera(left, right, top, bottom, near, far);
+  camera.position.set(x, y, z);
+  camera.lookAt(atX, atY, atZ);
+  return camera;
+}
+
 function refreshCameraParameters(camera) {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
 }
 
 ////////////////////////
