@@ -300,8 +300,8 @@ function update(timeDelta) {
       }
     });*/
 
-	if (updateProjectionMatrix) {
-		const isXrPresenting = renderer.xr.isPresenting;
+  if (updateProjectionMatrix) {
+    const isXrPresenting = renderer.xr.isPresenting;
     renderer.xr.isPresenting = false;
     updateProjectionMatrix = false;
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -310,12 +310,12 @@ function update(timeDelta) {
       refreshCameraParameters(isXrPresenting ? renderer.xr.getCamera() : activeCamera);
     }
     renderer.xr.isPresenting = isXrPresenting;
-	}
-	if (toggleActiveCamera) {
-		toggleActiveCamera = false;
+  }
+  if (toggleActiveCamera) {
+    toggleActiveCamera = false;
     activeCamera = activeCamera == ORBITAL_CAMERA ? FIXED_CAMERA : ORBITAL_CAMERA;
     refreshCameraParameters(activeCamera);
-	}
+  }
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
@@ -420,7 +420,7 @@ function animate() {
 ////////////////////////////
 
 function onResize() {
-    updateProjectionMatrix = true;
+  updateProjectionMatrix = true;
 }
 
 //////////////////
@@ -449,8 +449,8 @@ const keyHandlers = {
   // KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
   // KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
 
-	// EXTRA
-	Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
+  // EXTRA
+  Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
 };
 
 /**
