@@ -43,9 +43,10 @@ const MATERIAL = Object.freeze({
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
 const GEOMETRY = {
   mainCylinder: { r: 1, h: 21 },
-  outerRing: { ir: 8, or: 12, h: 4, rx: Math.PI / 2 },
-  centralRing: { ir: 4, or: 8, h: 4, rx: Math.PI / 2 },
+
   innerRing: { ir: 1, or: 4, h: 4, rx: Math.PI / 2 },
+  centralRing: { ir: 4, or: 8, h: 4, rx: Math.PI / 2 },
+  outerRing: { ir: 8, or: 12, h: 4, rx: Math.PI / 2 },
 
   mobiusStrip: { w: 2, h: 17, d: 2 },
 
@@ -56,7 +57,7 @@ const GEOMETRY = {
 
 // degrees of freedom for each profile
 const DEGREES_OF_FREEDOM = {
-  figures: { applier: translateDynamicPart, min: 0, max: 8, axis: 'y' },
+  figures: { applier: moveDynamicPart, min: 0, max: 8, axis: 'y' },
   ring: { applier: resizeDynamicPart, min: 4, max: 12, axis: 'y' },
 };
 const CAROUSEL_DYNAMIC_PARTS = Object.freeze([
@@ -83,7 +84,7 @@ const ORBITAL_CAMERA = createPerspectiveCamera({
   z: -50,
 });
 const FIXED_CAMERA = createPerspectiveCamera({
-  fov: 80,
+  fov: 60,
   near: 1,
   far: 1000,
   x: -32,
@@ -190,7 +191,10 @@ function createInnerRing(baseGroup) {
     parent: baseGroup,
   });
   ringElements.innerFigures = createGroup({ y: GEOMETRY.innerRing.h, parent: baseGroup });
-  // TODO: create the inner figures and add them to the group above
+  createObjects(
+    ringElements.innerFigures,
+    GEOMETRY.innerRing.ir + (GEOMETRY.innerRing.or - GEOMETRY.innerRing.ir) / 2
+  );
 }
 
 function createCentralRing(baseGroup) {
@@ -200,7 +204,10 @@ function createCentralRing(baseGroup) {
     parent: baseGroup,
   });
   ringElements.centralFigures = createGroup({ y: GEOMETRY.centralRing.h, parent: baseGroup });
-  // TODO: create the central figures and add them to the group above
+  createObjects(
+    ringElements.centralFigures,
+    GEOMETRY.centralRing.ir + (GEOMETRY.centralRing.or - GEOMETRY.centralRing.ir) / 2
+  );
 }
 
 function createOuterRing(baseGroup) {
@@ -210,7 +217,15 @@ function createOuterRing(baseGroup) {
     parent: baseGroup,
   });
   ringElements.outerFigures = createGroup({ y: GEOMETRY.outerRing.h, parent: baseGroup });
-  // TODO: create the outer figures and add them to the group above
+  createObjects(
+    ringElements.outerFigures,
+    GEOMETRY.outerRing.ir + (GEOMETRY.outerRing.or - GEOMETRY.outerRing.ir) / 2
+  );
+}
+
+function createObjects(ringGroup, radius) {
+  // TODO: create the outer figures and add them to the group above and also add them to the figures
+  //       global list.
 }
 
 function createMobiusStrip() {
@@ -290,30 +305,46 @@ function update(timeDelta) {
   }
 }
 
-function translateDynamicPart(timeDelta, { part, profile }) {
-  // TODO
-  // const group = dynamicElements[part];
-  // const props = DEGREES_OF_FREEDOM[profile];
-  // const delta = deltaSupplier({ profile, group, timeDelta });
-  // group.position.fromArray(
-  //   ['x', 'y', 'z'].map((axis) => {
-  //     const newValue = group.position[axis] + delta[axis];
-  //     if (props?.axis === axis) {
-  //       return THREE.MathUtils.clamp(newValue, props.min, props.max);
-  //     }
-  //     return newValue;
-  //   })
-  // );
+function moveDynamicPart(timeDelta, { part, profile }) {
+  const group = ringElements[part];
+  const props = DEGREES_OF_FREEDOM[profile];
+
+  const delta = deltaSupplier(timeDelta, props, group);
+  group.position.fromArray(
+    ['x', 'y', 'z'].map((axis) => {
+      let newValue = group.position[axis] + delta[axis];
+      if (props?.axis === axis) {
+        newValue = THREE.MathUtils.clamp(newValue, props.min, props.max);
+      }
+      if (newValue === props.min || newValue === props.max) {
+        group.dir = -1 * group.dir;
+      }
+      return newValue;
+    })
+  );
 }
 
 function resizeDynamicPart(timeDelta, { part, profile }) {
-  // TODO
-  // const group = dynamicElements[part];
-  // const props = DEGREES_OF_FREEDOM[profile];
-  // const delta = deltaSupplier({ profile, group, timeDelta });
-  // GEOMETRY.cable.h = THREE.MathUtils.clamp(GEOMETRY.cable.h - delta['y'], props.min, props.max);
-  // group.position.setY(-(GEOMETRY.cable.h + GEOMETRY.trolley.h) / 2);
-  // group.scale.set(1, GEOMETRY.cable.h / 9); // 9 is the default length of the cable
+  const group = ringElements[part];
+  const props = DEGREES_OF_FREEDOM[profile];
+
+  const delta = deltaSupplier(timeDelta, props, group);
+  GEOMETRY[part].h = THREE.MathUtils.clamp(
+    GEOMETRY[part].h + delta[props?.axis],
+    props.min,
+    props.max
+  );
+  if (GEOMETRY[part].h === props.min || GEOMETRY[part].h === props.max) {
+    group.dir = -1 * group.dir;
+  }
+  group.position.setY(GEOMETRY[part].h);
+  group.scale.set(1, 1, GEOMETRY[part].h / 4); // 4 is the default height of the ring
+}
+
+function deltaSupplier(timeDelta, props, group) {
+  const vec = new THREE.Vector3();
+  vec[props?.axis] = group.movementFlag ? group.dir || (group.dir = 1) : 0;
+  return vec.normalize().multiplyScalar(RING_LINEAR_VELOCITY * timeDelta);
 }
 
 /////////////
@@ -337,7 +368,9 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   renderer.xr.enabled = true;
-  document.body.appendChild(VRButton.createButton(renderer));
+  let button = VRButton.createButton(renderer);
+  button.style.background = 'rgba(0,0,0,1)'; // make the button more visible
+  document.body.appendChild(button);
 
   createScene();
   createCameras();
@@ -381,30 +414,23 @@ const keyHandlers = {
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
 };
 
-/**
- * Build a key handler that only executes once on keydown.
- * Ignores the keyup event, as well as duplicate keydown events.
- */
+function movementHandleFactory(parts) {
+  return (event, isKeyDown) => {
+    if (!isKeyDown || event.repeat) {
+      return;
+    }
+    parts.forEach((part) => {
+      ringElements[part].movementFlag = !ringElements[part].movementFlag;
+    });
+  };
+}
+
 function keyActionFactory(handler) {
   return (event, isKeyDown) => {
     if (!isKeyDown || event.repeat) {
       return;
     }
-
     handler(event);
-  };
-}
-
-function movementHandleFactory(parts) {
-  return (event, isKeyDown) => {
-    if (event.repeat) {
-      // ignore holding down keys
-      return;
-    }
-
-    parts.forEach((part) => {
-      ringElements[part].movementFlag = isKeyDown;
-    });
   };
 }
 
