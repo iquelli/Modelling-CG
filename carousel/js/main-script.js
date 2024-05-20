@@ -214,27 +214,41 @@ function createOuterRing(baseGroup) {
 }
 
 function createMobiusStrip() {
-  // TODO: change it to the teacher's liking
-  const strip = new THREE.Object3D();
-  strip.position.set(0, 22, 0);
-  scene.add(strip);
-  const count = 256;
-  const box = new THREE.BoxGeometry();
-  const radius = 12;
-  // Set up variables
-  for (let i = 0; i < count; i++) {
-    const a = (Math.PI / count) * 90 * i;
-    const o = new THREE.Object3D();
-    o.position.set(Math.cos(a), Math.sin(a * 2) / 180, Math.sin(a));
-    o.position.multiplyScalar(radius);
-    o.lookAt(scene.position);
-    strip.add(o);
-    const mat = MATERIAL['mobiusStrip'];
-    const mesh = new THREE.Mesh(box, mat);
-    mesh.scale.set(1, 3, 1);
-    mesh.rotation.x = a / 2;
-    o.add(mesh);
+  const geometry = new THREE.BufferGeometry();
+
+  // Define vertices manually measured for a Möbius strip with radius 12 and width 3
+  const vertices = new Float32Array([
+    12, 1.5, 0, 9, 1.5, 3, 10.5, 1.6, 5.4, 8.6, 1.4, 4.2, 8, 1.7, 9, 6.25, 1.3, 7, 4, 2.1, 11.25,
+    3.25, 0.9, 9.5, 0, 2.5, 12, 0, 0.5, 10.5, -4, 2.8, 11.25, -3.75, 0.2, 10.4, -8, 2.9, 9, -7.75,
+    0.1, 8.75, -10.5, 2.95, 5.4, -10.5, 0.05, 5.4, -12, 3, 0, -12, 0, 0, -10.5, 2.95, -5.4, -10.5,
+    0.05, -5.4, -8, 2.9, -9, -7.75, 0.1, -8.75, -4, 2.8, -11.25, -3.75, 0.2, -10.4, 0, 2.5, -12, 0,
+    0.5, -10.5, 4, 2.1, -11.25, 3.25, 0.9, -9.5, 8, 1.7, -9, 6.25, 1.3, -7, 10.5, 1.5, -5.4, 8.6,
+    1.5, -4.2,
+  ]);
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+  // Define indices to form triangles
+  let indices = [
+    0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 7, 4, 7, 6, 6, 7, 9, 6, 9, 8, 8, 9, 11, 8, 11, 10, 10,
+    11, 13, 10, 13, 12, 12, 13, 15, 12, 15, 14, 14, 15, 17, 14, 17, 16, 16, 17, 19, 16, 19, 18, 18,
+    19, 21, 18, 21, 20, 20, 21, 23, 20, 23, 22, 22, 23, 25, 22, 25, 24, 24, 25, 27, 24, 27, 26, 26,
+    27, 29, 26, 29, 28, 28, 29, 31, 28, 31, 30, 30, 31, 1, 30, 1, 0,
+  ];
+  let length = indices.length;
+
+  for (let i = 0; i < length; i += 3) {
+    indices.push(indices[i + 2], indices[i + 1], indices[i]);
   }
+
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+  const mobiusStrip = new THREE.Mesh(geometry, material);
+  mobiusStrip.position.set(0, 21, 0);
+
+  scene.add(mobiusStrip);
 }
 
 /////////////////////
