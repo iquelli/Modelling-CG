@@ -115,9 +115,9 @@ const ORBITAL_CAMERA = createPerspectiveCamera({
   fov: 80,
   near: 1,
   far: 1000,
-  x: -10,
-  y: 20,
-  z: -10,
+  x: -30,
+  y: 40,
+  z: -50,
 });
 const FIXED_CAMERA = createPerspectiveCamera({
   fov: 80,
@@ -136,6 +136,10 @@ let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
 const dynamicElements = {};
+
+// flags for event handlers
+let updateProjectionMatrix = false;
+let toggleActiveCamera = false;
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -295,6 +299,23 @@ function update(timeDelta) {
         DEGREES_OF_FREEDOM[dynamicPart.profile].applier(timeDelta, dynamicPart);
       }
     });*/
+
+	if (updateProjectionMatrix) {
+		const isXrPresenting = renderer.xr.isPresenting;
+    renderer.xr.isPresenting = false;
+    updateProjectionMatrix = false;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    if (window.innerHeight > 0 && window.innerWidth > 0) {
+      refreshCameraParameters(isXrPresenting ? renderer.xr.getCamera() : activeCamera);
+    }
+    renderer.xr.isPresenting = isXrPresenting;
+	}
+	if (toggleActiveCamera) {
+		toggleActiveCamera = false;
+    activeCamera = activeCamera == ORBITAL_CAMERA ? FIXED_CAMERA : ORBITAL_CAMERA;
+    refreshCameraParameters(activeCamera);
+	}
 }
 
 function rotateDynamicParts(timeDelta, { part, profile }) {
@@ -399,11 +420,7 @@ function animate() {
 ////////////////////////////
 
 function onResize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  if (window.innerHeight > 0 && window.innerWidth > 0) {
-    refreshCameraParameters(activeCamera);
-  }
+    updateProjectionMatrix = true;
 }
 
 //////////////////
@@ -431,7 +448,24 @@ const keyHandlers = {
   // fingers
   // KeyR: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zPositive' }),
   // KeyF: transformDynamicPartHandleFactory({ parts: ['fingers'], flag: 'zNegative' }),
+
+	// EXTRA
+	Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
 };
+
+/**
+ * Build a key handler that only executes once on keydown.
+ * Ignores the keyup event, as well as duplicate keydown events.
+ */
+function keyActionFactory(handler) {
+  return (event, isDown) => {
+    if (!isDown || event.repeat) {
+      return;
+    }
+
+    handler(event);
+  };
+}
 
 function changeActiveCameraHandleFactory(cameraDescriptor) {
   return (event, isKeyUp) => {
@@ -464,36 +498,30 @@ function transformDynamicPartHandleFactory({ parts, flag }) {
 /* KEY DOWN CALLBACK */
 ///////////////////////
 
-function onKeyDown(e) {
-  let code = e.code;
+function onKeyDown(event) {
+  let { code } = event;
 
   // Treat numpad digits like the number row
   if (/^Numpad\d$/.test(code)) {
     code = code.replace('Numpad', 'Digit');
   }
 
-  if (code in keyHandlers && !clawAnimating) {
-    pressedKeys[e.key] = true;
-    keyHandlers[code]?.(e, false);
-  }
+  keyHandlers[code]?.(event, true);
 }
 
 ///////////////////////
 /* KEY UP CALLBACK */
 ///////////////////////
 
-function onKeyUp(e) {
-  let code = e.code;
+function onKeyUp(event) {
+  let { code } = event;
 
   // Treat numpad digits like the number row
   if (/^Numpad\d$/.test(code)) {
     code = code.replace('Numpad', 'Digit');
   }
 
-  if (code in keyHandlers) {
-    keyHandlers[code]?.(e, true);
-    pressedKeys[e.key] = false;
-  }
+  keyHandlers[code]?.(event, false);
 }
 
 ///////////////
