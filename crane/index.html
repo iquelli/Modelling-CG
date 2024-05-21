@@ -4,8 +4,13 @@
     <meta charset="utf-8" />
     <title>Crane</title>
     <link rel="stylesheet" href="css/style.css" />
-    <script src="js/three.min.js"></script>
-    <script src="js/main-script.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@v0.163.0/build/three.module.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="controls">
@@ -44,9 +49,6 @@
         <button id="F">F</button>
       </div>
     </div>
-    <script>
-      init();
-      requestAnimationFrame(animate);
-    </script>
+    <script type="module" src="js/main-script.js"></script>
   </body>
 </html>

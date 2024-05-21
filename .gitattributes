@@ -1,2 +1,0 @@
-# Vendor everything but the main scripts
-**/three.min.js linguist-vendored

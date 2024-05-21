@@ -1,5 +1,7 @@
 'use strict';
 
+import * as THREE from 'three';
+
 /*
   Grupo 7
   Esforço por elemento do grupo: 15 horas
@@ -1088,3 +1090,6 @@ function generateRandomPosition(object) {
 
   object.position.set(position.x, object.position.y, position.z);
 }
+
+init();
+requestAnimationFrame(animate);
