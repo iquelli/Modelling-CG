@@ -29,14 +29,14 @@ const MATERIAL = Object.freeze({
   mobiusStrip: new THREE.MeshBasicMaterial({ color: '#a66666' }),
 
   // Figures 1-8
-  figure1: new THREE.MeshBasicMaterial({ color: '#ffbf42' }),
-  figure2: new THREE.MeshBasicMaterial({ color: '#ff6f6b' }),
-  figure3: new THREE.MeshBasicMaterial({ color: '#FFF06E' }),
-  figure4: new THREE.MeshBasicMaterial({ color: '#F5F8DE' }),
-  figure5: new THREE.MeshBasicMaterial({ color: '#32ff7e' }),
-  figure6: new THREE.MeshBasicMaterial({ color: '#661F99' }),
-  figure7: new THREE.MeshBasicMaterial({ color: '#8338EC' }),
-  figure8: new THREE.MeshBasicMaterial({ color: '#3A86FF' }),
+  fig1: new THREE.MeshBasicMaterial({ color: '#ffbf42' }),
+  fig2: new THREE.MeshBasicMaterial({ color: '#ff6f6b' }),
+  fig3: new THREE.MeshBasicMaterial({ color: '#FFF06E' }),
+  fig4: new THREE.MeshBasicMaterial({ color: '#F5F8DE' }),
+  fig5: new THREE.MeshBasicMaterial({ color: '#32ff7e' }),
+  fig6: new THREE.MeshBasicMaterial({ color: '#661F99' }),
+  fig7: new THREE.MeshBasicMaterial({ color: '#8338EC' }),
+  fig8: new THREE.MeshBasicMaterial({ color: '#3A86FF' }),
 });
 
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
@@ -57,7 +57,7 @@ const GEOMETRY = {
 
 // degrees of freedom for each profile
 const DEGREES_OF_FREEDOM = {
-  figures: { applier: moveDynamicPart, min: 0, max: 8, axis: 'y' },
+  figures: { applier: moveDynamicPart, min: 4, max: 12, axis: 'y' },
   ring: { applier: resizeDynamicPart, min: 4, max: 12, axis: 'y' },
 };
 const CAROUSEL_DYNAMIC_PARTS = Object.freeze([
@@ -224,8 +224,113 @@ function createOuterRing(baseGroup) {
 }
 
 function createObjects(ringGroup, radius) {
-  // TODO: create the outer figures and add them to the group above and also add them to the figures
-  //       global list.
+  const figs = ['fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7', 'fig8'];
+  const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // 8 possible angles
+  // TODO: fix these disgusting functions below
+  const funcs = [
+    (u, v, target) => {
+      // hyperboloid
+      const a = 1,
+        b = 1,
+        c = 2;
+      u = (u - 0.5) * Math.PI;
+      v = (v - 0.5) * 2 * Math.PI;
+      const x = a * Math.sinh(u) * Math.cos(v);
+      const y = b * Math.sinh(u) * Math.sin(v);
+      const z = c * Math.cosh(u);
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // klein bottle
+      u *= Math.PI;
+      v *= 2 * Math.PI;
+      u = u * 2;
+      let x, y, z;
+      if (u < Math.PI) {
+        x =
+          3 * Math.cos(u) * (1 + Math.sin(u)) +
+          2 * (1 - Math.cos(u) / 2) * Math.cos(u) * Math.cos(v);
+        y = 8 * Math.sin(u) + 2 * (1 - Math.cos(u) / 2) * Math.sin(u) * Math.cos(v);
+      } else {
+        x = 3 * Math.cos(u) * (1 + Math.sin(u)) + 2 * (1 - Math.cos(u) / 2) * Math.cos(v + Math.PI);
+        y = 8 * Math.sin(u);
+      }
+      z = 2 * (1 - Math.cos(u) / 2) * Math.sin(v);
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // torus
+      const R = 2,
+        r = 1;
+      const x = (R + r * Math.cos(v * 2 * Math.PI)) * Math.cos(u * 2 * Math.PI);
+      const y = (R + r * Math.cos(v * 2 * Math.PI)) * Math.sin(u * 2 * Math.PI);
+      const z = r * Math.sin(v * 2 * Math.PI);
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // plane
+      const x = u * 10 - 5;
+      const y = v * 10 - 5;
+      const z = 0;
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // torus knot
+      const p = 3,
+        q = 2;
+      const r = 10 + Math.cos(q * v) * 2;
+      const x = r * Math.cos(p * v);
+      const y = r * Math.sin(p * v);
+      const z = Math.sin(q * v) * 2;
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // kuens
+      const a = 0.2;
+      const x =
+        (a + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.cos(u);
+      const y =
+        (a + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.sin(u);
+      const z = Math.sin(u / 2) * Math.sin(v) + Math.cos(u / 2) * Math.sin(2 * v);
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // dinis
+      const a = 1,
+        b = 0.2,
+        c = 0.3;
+      const x = a * Math.cos(u) * Math.sin(v);
+      const y = a * Math.sin(u) * Math.sin(v);
+      const z = a * (Math.cos(v) + Math.log(Math.tan(v / 2))) + b * u;
+      target.set(x, y, z);
+    },
+    (u, v, target) => {
+      // ellipsoid
+      const a = 2,
+        b = 1.5,
+        c = 1;
+      const x = a * Math.sin(u * Math.PI) * Math.cos(v * 2 * Math.PI);
+      const y = b * Math.sin(u * Math.PI) * Math.sin(v * 2 * Math.PI);
+      const z = c * Math.cos(u * Math.PI);
+      target.set(x, y, z);
+    },
+  ];
+
+  figs.forEach((fig) => {
+    var i = Math.floor(Math.random() * angles.length);
+    figures.push(
+      createParametricObjectMesh({
+        name: fig,
+        x: Math.cos(angles[i]) * radius,
+        y: 0,
+        z: Math.sin(angles[i]) * radius,
+        scale: 0.5,
+        parent: ringGroup,
+        geomFunc: funcs.shift(),
+      })
+    );
+    angles.splice(i, 1); // Remove used up angle
+  });
 }
 
 function createMobiusStrip() {
@@ -555,15 +660,13 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
  *
  * Automatically adds the created Mesh to the given parent.
  */
-function createObjectMesh({ name, x = 0, y = 0, z = 0, parent, geomFunc }) {
-  // TODO
-  // const { r } = GEOMETRY[name];
-  // const material = MATERIAL[name];
-  // const geometry = new geomFunc(r);
-  // const radialObject = new THREE.Mesh(geometry, material);
-  // radialObject.position.set(x, y, z);
-  // parent.add(radialObject);
-  // return radialObject;
+function createParametricObjectMesh({ name, x = 0, y = 0, z = 0, scale, parent, geomFunc }) {
+  const material = MATERIAL[name];
+  const object = new THREE.Mesh(new ParametricGeometry(geomFunc, 25, 25), material);
+  object.position.set(x, y, z);
+  object.scale.set(scale, scale, scale);
+  parent.add(object);
+  return object;
 }
 
 init();
