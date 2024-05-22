@@ -314,7 +314,9 @@ function createInnerRing() {
   ringElements.innerFigures = createGroup({ y: GEOMETRY.innerRing.h, parent: carouselGroup });
   createObjects(
     ringElements.innerFigures,
-    GEOMETRY.innerRing.ir + (GEOMETRY.innerRing.or - GEOMETRY.innerRing.ir) / 2
+    GEOMETRY.innerRing.ir + (GEOMETRY.innerRing.or - GEOMETRY.innerRing.ir) / 2,
+    [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
+    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
   );
 }
 
@@ -327,7 +329,9 @@ function createCentralRing() {
   ringElements.centralFigures = createGroup({ y: GEOMETRY.centralRing.h, parent: carouselGroup });
   createObjects(
     ringElements.centralFigures,
-    GEOMETRY.centralRing.ir + (GEOMETRY.centralRing.or - GEOMETRY.centralRing.ir) / 2
+    GEOMETRY.centralRing.ir + (GEOMETRY.centralRing.or - GEOMETRY.centralRing.ir) / 2,
+    [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
+    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
   );
 }
 
@@ -340,15 +344,15 @@ function createOuterRing() {
   ringElements.outerFigures = createGroup({ y: GEOMETRY.outerRing.h, parent: carouselGroup });
   createObjects(
     ringElements.outerFigures,
-    GEOMETRY.outerRing.ir + (GEOMETRY.outerRing.or - GEOMETRY.outerRing.ir) / 2
+    GEOMETRY.outerRing.ir + (GEOMETRY.outerRing.or - GEOMETRY.outerRing.ir) / 2,
+    [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
+    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
   );
 }
 
-function createObjects(ringGroup, radius) {
+function createObjects(ringGroup, radius, scales, yaxis) {
   const figs = ['fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7', 'fig8'];
   const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // 8 possible angles
-  const scales = [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5];
-  const posY = [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75];
   const funcs = [
     (u, v, target) => {
       // hyperboloid
@@ -445,7 +449,7 @@ function createObjects(ringGroup, radius) {
       createParametricObjectMesh({
         name: fig,
         x: Math.cos((angles[i] * Math.PI) / 180) * radius,
-        y: posY.shift(),
+        y: yaxis.shift(),
         z: Math.sin((angles[i] * Math.PI) / 180) * radius,
         scale: scales.shift(),
         parent: ringGroup,
@@ -459,120 +463,57 @@ function createObjects(ringGroup, radius) {
 function createMobiusStrip() {
   const geometry = new THREE.BufferGeometry();
 
+  // prettier-ignore
   // Define vertices manually measured for a Möbius strip with radius 12 and width 3
   const vertices = new Float32Array([
     // X       Y       Z        // Vertex #
-    12,
-    1.5,
-    0, // 0
-    9,
-    1.5,
-    0, // 1
+    12,        1.5,    0,       // 0
+    9,         1.5,    0,       // 1
 
-    10.5,
-    1.6,
-    5.4, // 2
-    8.6,
-    1.4,
-    4.2, // 3
+    10.5,      1.6,    5.4,     // 2
+    8.6,       1.4,    4.2,     // 3
 
-    8,
-    1.7,
-    9, // 4
-    6.25,
-    1.3,
-    7, // 5
+    8,         1.7,    9,       // 4
+    6.25,      1.3,    7,       // 5
 
-    4,
-    2.1,
-    11.25, // 6
-    3.25,
-    0.9,
-    9.5, // 7
+    4,         2.1,    11.25,   // 6
+    3.25,      0.9,    9.5,     // 7
 
-    0,
-    2.5,
-    12, // 8
-    0,
-    0.5,
-    10.5, // 9
+    0,         2.5,    12,      // 8
+    0,         0.5,    10.5,    // 9
 
-    -4,
-    2.8,
-    11.25, // 10
-    -3.75,
-    0.2,
-    10.4, // 11
+    -4,        2.8,    11.25,   // 10
+    -3.75,     0.2,    10.4,    // 11
 
-    -8,
-    2.9,
-    9, // 12
-    -7.75,
-    0.1,
-    8.75, // 13
+    -8,        2.9,    9,       // 12
+    -7.75,     0.1,    8.75,    // 13
 
-    -10.5,
-    2.95,
-    5.4, // 14
-    -10.5,
-    0.05,
-    5.4, // 15
+    -10.5,     2.95,   5.4,     // 14
+    -10.5,     0.05,   5.4,     // 15
 
-    -12,
-    3,
-    0, // 16
-    -12,
-    0,
-    0, // 17
+    -12,       3,      0,       // 16
+    -12,       0,      0,       // 17
 
-    -10.5,
-    2.95,
-    -5.4, // 18
-    -10.5,
-    0.05,
-    -5.4, // 19
+    -10.5,     2.95,   -5.4,    // 18
+    -10.5,     0.05,   -5.4,    // 19
 
-    -8,
-    0.1,
-    -8.75, // 20
-    -7.75,
-    2.9,
-    -8.75, // 21
+    -8,        0.1,    -8.75,   // 20
+    -7.75,     2.9,    -8.75,   // 21
 
-    -4,
-    0.2,
-    -11.25, // 22
-    -3.75,
-    2.8,
-    -10.4, // 23
+    -4,        0.2,    -11.25,  // 22
+    -3.75,     2.8,    -10.4,   // 23
 
-    0,
-    0.5,
-    -12, // 24
-    0,
-    2.5,
-    -10.5, // 25
+    0,         0.5,    -12,     // 24
+    0,         2.5,    -10.5,   // 25
 
-    4,
-    0.9,
-    -11.25, // 26
-    3.25,
-    2.2,
-    -9.5, // 27
+    4,         0.9,    -11.25,  // 26
+    3.25,      2.2,    -9.5,    // 27
 
-    8,
-    1.3,
-    -9, // 28
-    6.25,
-    1.7,
-    -7, // 29
+    8,         1.3,    -9,      // 28
+    6.25,      1.7,    -7,      // 29
 
-    10.5,
-    1.5,
-    -5.4, // 30
-    8.6,
-    1.5,
-    -4.2, // 31
+    10.5,      1.5,    -5.4,    // 30
+    8.6,       1.5,    -4.2,    // 31
   ]);
 
   geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
@@ -601,10 +542,6 @@ function createMobiusStrip() {
 
   scene.add(mobiusStrip);
 }
-
-/////////////////////
-/* CREATE LIGHT(S) */
-/////////////////////
 
 ////////////
 /* UPDATE */
