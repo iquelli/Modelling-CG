@@ -54,7 +54,7 @@ const MATERIAL = Object.freeze({
 
   // Mobius strip
   mobiusStrip: {
-    basic: new THREE.MeshBasicMaterial({ color: '#990000'}),
+    basic: new THREE.MeshBasicMaterial({ color: '#990000' }),
     lambert: new THREE.MeshLambertMaterial({ color: '#990000', emissive: '#ff0000' }),
     phong: new THREE.MeshPhongMaterial({ color: '#990000', specular: '#ffffff', shininess: 30 }),
     toon: new THREE.MeshToonMaterial({ color: '#990000', opacity: 0.7 }),
@@ -119,8 +119,6 @@ const MATERIAL = Object.freeze({
     normal: new THREE.MeshNormalMaterial(),
   },
 });
-
-
 
 // must be functions because they depend on textures initialized later
 const MATERIAL_PARAMS = {
@@ -214,15 +212,14 @@ let toggleActiveCamera = false;
 /* CREATE LIGHT(S) */
 /////////////////////
 
-const ambientLight = new THREE.AmbientLight(0xFF5500, 1); 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 5); 
+const ambientLight = new THREE.AmbientLight(0xff5500, 1);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
 
-function createLights(){
+function createLights() {
   scene.add(ambientLight);
-  directionalLight.position.set(0.5, 1, 0); 
+  directionalLight.position.set(0.5, 1, 0);
   scene.add(directionalLight);
 }
-
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -289,7 +286,7 @@ function refreshCameraParameters(camera) {
 function createSkyDome() {
   const material = new THREE.MeshPhongMaterial({ ...MATERIAL_PARAMS.skyDome() });
   const plane = new THREE.Mesh(GEOMETRY.skyDome, material);
-  plane.name='skydome';
+  plane.name = 'skydome';
   baseGroup.add(plane);
 }
 
@@ -463,82 +460,129 @@ function createMobiusStrip() {
   // Define vertices manually measured for a Möbius strip with radius 12 and width 3
   const vertices = new Float32Array([
     // X       Y       Z        // Vertex #
-    12,      1.5,      0,       // 0
-     9,      1.5,      0,       // 1
+    12,
+    1.5,
+    0, // 0
+    9,
+    1.5,
+    0, // 1
 
-  10.5,      1.6,    5.4,       // 2
-   8.6,      1.4,    4.2,       // 3
+    10.5,
+    1.6,
+    5.4, // 2
+    8.6,
+    1.4,
+    4.2, // 3
 
-     8,      1.7,      9,       // 4
-  6.25,      1.3,      7,       // 5
+    8,
+    1.7,
+    9, // 4
+    6.25,
+    1.3,
+    7, // 5
 
-     4,      2.1,  11.25,       // 6
-  3.25,      0.9,    9.5,       // 7
+    4,
+    2.1,
+    11.25, // 6
+    3.25,
+    0.9,
+    9.5, // 7
 
-     0,      2.5,     12,       // 8
-     0,      0.5,   10.5,       // 9
+    0,
+    2.5,
+    12, // 8
+    0,
+    0.5,
+    10.5, // 9
 
-    -4,      2.8,  11.25,       // 10
- -3.75,      0.2,   10.4,       // 11
+    -4,
+    2.8,
+    11.25, // 10
+    -3.75,
+    0.2,
+    10.4, // 11
 
-    -8,      2.9,      9,       // 12
- -7.75,      0.1,   8.75,       // 13
+    -8,
+    2.9,
+    9, // 12
+    -7.75,
+    0.1,
+    8.75, // 13
 
- -10.5,     2.95,    5.4,       // 14
- -10.5,     0.05,    5.4,       // 15
+    -10.5,
+    2.95,
+    5.4, // 14
+    -10.5,
+    0.05,
+    5.4, // 15
 
-   -12,        3,      0,       // 16
-   -12,        0,      0,       // 17
+    -12,
+    3,
+    0, // 16
+    -12,
+    0,
+    0, // 17
 
- -10.5,     2.95,   -5.4,       // 18
- -10.5,     0.05,   -5.4,       // 19
+    -10.5,
+    2.95,
+    -5.4, // 18
+    -10.5,
+    0.05,
+    -5.4, // 19
 
-    -8,      0.1,     -8.75,       // 20
- -7.75,      2.9,  -8.75,       // 21
+    -8,
+    0.1,
+    -8.75, // 20
+    -7.75,
+    2.9,
+    -8.75, // 21
 
-    -4,      0.2, -11.25,       // 22
- -3.75,      2.8,  -10.4,       // 23
+    -4,
+    0.2,
+    -11.25, // 22
+    -3.75,
+    2.8,
+    -10.4, // 23
 
-     0,      0.5,    -12,       // 24
-     0,      2.5,  -10.5,       // 25
+    0,
+    0.5,
+    -12, // 24
+    0,
+    2.5,
+    -10.5, // 25
 
-     4,      0.9, -11.25,       // 26
-  3.25,      2.2,   -9.5,       // 27
+    4,
+    0.9,
+    -11.25, // 26
+    3.25,
+    2.2,
+    -9.5, // 27
 
-     8,      1.3,     -9,       // 28
-  6.25,      1.7,     -7,       // 29
+    8,
+    1.3,
+    -9, // 28
+    6.25,
+    1.7,
+    -7, // 29
 
-  10.5,      1.5,   -5.4,       // 30
-   8.6,      1.5,   -4.2,       // 31
-
-
-   
-]);
-
-  
+    10.5,
+    1.5,
+    -5.4, // 30
+    8.6,
+    1.5,
+    -4.2, // 31
+  ]);
 
   geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
   // Define indices to form triangles
   let indices = [
-    0,  1,  3,     14, 15, 17,
-    0,  3,  2,     14, 17, 16,
-    2,  3,  5,     16, 17, 19,
-    2,  5,  4,     16, 19, 18,
-    4,  5,  7,     18, 19, 21,
-    4,  7,  6,     19, 20, 21,
-    6,  7,  9,     20, 21, 23,
-    6,  9,  8,     20, 23, 22,
-    8,  9, 11,     22, 23, 25,
-    8, 11, 10,     22, 25, 24,
-   10, 11, 13,     24, 25, 27,
-   10, 13, 12,     24, 27, 26,
-   12, 13, 15,     26, 27, 29,
-   12, 15, 14,     26, 29, 28,
-   30, 31,  1,     28, 29, 31,
-   30,  1,  0,     28, 31, 30,
+    0, 1, 3, 14, 15, 17, 0, 3, 2, 14, 17, 16, 2, 3, 5, 16, 17, 19, 2, 5, 4, 16, 19, 18, 4, 5, 7, 18,
+    19, 21, 4, 7, 6, 19, 20, 21, 6, 7, 9, 20, 21, 23, 6, 9, 8, 20, 23, 22, 8, 9, 11, 22, 23, 25, 8,
+    11, 10, 22, 25, 24, 10, 11, 13, 24, 25, 27, 10, 13, 12, 24, 27, 26, 12, 13, 15, 26, 27, 29, 12,
+    15, 14, 26, 29, 28, 30, 31, 1, 28, 29, 31, 30, 1, 0, 28, 31, 30,
   ];
-  
+
   let length = indices.length;
 
   for (let i = 0; i < length; i += 3) {
@@ -548,15 +592,13 @@ function createMobiusStrip() {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
 
-  const material = MATERIAL.mobiusStrip.basic
+  const material = MATERIAL.mobiusStrip.basic;
   const mobiusStrip = new THREE.Mesh(geometry, material);
   mobiusStrip.position.set(0, 21, 0);
-  mobiusStrip.name='mobiusStrip';
+  mobiusStrip.name = 'mobiusStrip';
 
   scene.add(mobiusStrip);
- 
 }
-
 
 /////////////////////
 /* CREATE LIGHT(S) */
@@ -737,8 +779,8 @@ function meshHandleFactory(meshType) {
       return;
     }
     scene.traverse((object) => {
-      if (object.isMesh && object.name!=='skydome') {
-        console.log(object)
+      if (object.isMesh && object.name !== 'skydome') {
+        console.log(object);
         const material = MATERIAL[object.name][meshType];
         object.material = material;
         material.needsUpdate = true;
@@ -748,15 +790,13 @@ function meshHandleFactory(meshType) {
 }
 
 function toggleGlobalLighting() {
-
   return (event, isKeyDown) => {
     if (!isKeyDown || event.repeat) {
       return;
     }
-  directionalLight.visible = !directionalLight.visible;  
-};
+    directionalLight.visible = !directionalLight.visible;
+  };
 }
-
 
 function keyActionFactory(handler) {
   return (event, isKeyDown) => {
@@ -837,7 +877,7 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
   const cylinder = new THREE.Mesh(geometry, material);
   cylinder.position.set(x, y, z);
   cylinder.rotation.set(rx, ry, rz);
-  cylinder.name=name;
+  cylinder.name = name;
 
   parent.add(cylinder);
   return cylinder;
@@ -852,7 +892,6 @@ function createCylinderMesh({ name, x = 0, y = 0, z = 0, parent }) {
 function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
   const { ir, or, h, rx = 0, ry = 0, rz = 0 } = GEOMETRY[name];
   const material = MATERIAL[name].basic;
-  
 
   // allows for smooth edges on small rings, while also preventing too many segments on smaller ones
   const radialSegments = THREE.MathUtils.clamp(Math.round(100 * or), 5, 35);
@@ -875,12 +914,11 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
   arcShape.holes.push(holePath);
 
   var geometry = new THREE.ExtrudeGeometry(arcShape, extrudeSettings);
-  
 
   const ring = new THREE.Mesh(geometry, material);
   ring.position.set(x, y, z);
   ring.rotation.set(rx, ry, rz);
-  ring.name=name;
+  ring.name = name;
 
   parent.add(ring);
   return ring;
@@ -896,7 +934,7 @@ function createParametricObjectMesh({ name, x = 0, y = 0, z = 0, scale, parent, 
   const material = MATERIAL[name].basic;
   const object = new THREE.Mesh(new ParametricGeometry(geomFunc, 25, 25), material);
   object.position.set(x, y, z);
-  object.name=name;
+  object.name = name;
   object.scale.set(scale, scale, scale);
   parent.add(object);
   return object;
