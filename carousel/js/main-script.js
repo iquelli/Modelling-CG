@@ -92,7 +92,7 @@ const BASE_ANGULAR_VELOCITY = (2 * Math.PI) / 10; // 10 seconds for one rotation
 const FIGURE_ANGULAR_VELOCITY = (2 * Math.PI) / 5; // 5 seconds for one rotation
 const RING_LINEAR_VELOCITY = 5; // 5 units per second
 
-const SKY_MAP_PATH = "assets/an-optical-poem.jpg"
+const SKY_MAP_PATH = 'assets/an-optical-poem.jpg';
 
 const ORBITAL_CAMERA = createPerspectiveCamera({
   fov: 80,
@@ -196,7 +196,6 @@ function createSkyDome() {
 }
 
 function createCarousel() {
-
   createMainCylinder(baseGroup);
   createInnerRing(baseGroup);
   createCentralRing(baseGroup);
