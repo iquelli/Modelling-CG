@@ -16,6 +16,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const BACKGROUND = new THREE.Color(0xcbfeff);
 
+const DOME_RADIUS = 64;
+const SPHERE_SEGMENTS = 32;
+
 const MATERIAL = Object.freeze({
   // Main cylinder
   mainCylinder: new THREE.MeshBasicMaterial({ color: '#222222' }),
@@ -39,9 +42,23 @@ const MATERIAL = Object.freeze({
   fig8: new THREE.MeshBasicMaterial({ color: '#3A86FF' }),
 });
 
+// must be functions because they depend on textures initialized later
+const MATERIAL_PARAMS = {
+  skyDome: () => ({ map: skyMap, side: THREE.BackSide }),
+};
+
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
 const GEOMETRY = {
+  skyDome: new THREE.SphereGeometry(
+    DOME_RADIUS,
+    SPHERE_SEGMENTS,
+    SPHERE_SEGMENTS,
+    0,
+    2 * Math.PI,
+    0,
+    Math.PI / 2
+  ),
   mainCylinder: { r: 1, h: 21 },
 
   innerRing: { ir: 1, or: 4, h: 4, rx: Math.PI / 2 },
@@ -75,6 +92,8 @@ const BASE_ANGULAR_VELOCITY = (2 * Math.PI) / 10; // 10 seconds for one rotation
 const FIGURE_ANGULAR_VELOCITY = (2 * Math.PI) / 5; // 5 seconds for one rotation
 const RING_LINEAR_VELOCITY = 5; // 5 units per second
 
+const SKY_MAP_PATH = "assets/an-optical-poem.jpg"
+
 const ORBITAL_CAMERA = createPerspectiveCamera({
   fov: 80,
   near: 1,
@@ -104,6 +123,9 @@ let baseGroup;
 const ringElements = {};
 const figures = [];
 
+// textures
+let skyMap;
+
 // flags for event handlers
 let updateProjectionMatrix = false;
 let toggleActiveCamera = false;
@@ -117,7 +139,7 @@ function createScene() {
   scene.add(new THREE.AxesHelper(20));
   scene.background = BACKGROUND;
 
-  //createSkydome();
+  createSkyDome();
   createCarousel();
   //createMobiusStrip();
 }
@@ -166,8 +188,14 @@ function refreshCameraParameters(camera) {
 /* CREATE OBJECT3D(S) */
 ////////////////////////
 
-function createCarousel() {
+function createSkyDome() {
   baseGroup = createGroup({ parent: scene });
+  const material = new THREE.MeshPhongMaterial({ ...MATERIAL_PARAMS.skyDome() });
+  const plane = new THREE.Mesh(GEOMETRY.skyDome, material);
+  baseGroup.add(plane);
+}
+
+function createCarousel() {
 
   createMainCylinder(baseGroup);
   createInnerRing(baseGroup);
@@ -476,6 +504,11 @@ function init() {
   let button = VRButton.createButton(renderer);
   button.style.background = 'rgba(0,0,0,1)'; // make the button more visible
   document.body.appendChild(button);
+
+  // create buffer scene
+
+  const loader = new THREE.TextureLoader();
+  skyMap = loader.load(SKY_MAP_PATH);
 
   createScene();
   createCameras();
