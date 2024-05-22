@@ -234,6 +234,9 @@ function createScene() {
   scene.background = BACKGROUND;
   createLights();
 
+  baseGroup = createGroup({ parent: scene });
+  carouselGroup = createGroup({ parent: baseGroup });
+
   createSkyDome();
   createCarousel();
   createMobiusStrip();
@@ -284,7 +287,6 @@ function refreshCameraParameters(camera) {
 ////////////////////////
 
 function createSkyDome() {
-  baseGroup = createGroup({ parent: scene });
   const material = new THREE.MeshPhongMaterial({ ...MATERIAL_PARAMS.skyDome() });
   const plane = new THREE.Mesh(GEOMETRY.skyDome, material);
   plane.name='skydome';
@@ -292,54 +294,53 @@ function createSkyDome() {
 }
 
 function createCarousel() {
-  carouselGroup = createGroup({ parent: scene });
-  createMainCylinder(carouselGroup);
-  createInnerRing(carouselGroup);
-  createCentralRing(carouselGroup);
-  createOuterRing(carouselGroup);
+  createMainCylinder();
+  createInnerRing();
+  createCentralRing();
+  createOuterRing();
 }
 
-function createMainCylinder(baseGroup) {
+function createMainCylinder() {
   createCylinderMesh({
     name: 'mainCylinder',
     y: GEOMETRY.mainCylinder.h / 2,
-    parent: baseGroup,
+    parent: carouselGroup,
   });
 }
 
-function createInnerRing(baseGroup) {
+function createInnerRing() {
   ringElements.innerRing = createRingMesh({
     name: 'innerRing',
     y: GEOMETRY.innerRing.h,
-    parent: baseGroup,
+    parent: carouselGroup,
   });
-  ringElements.innerFigures = createGroup({ y: GEOMETRY.innerRing.h, parent: baseGroup });
+  ringElements.innerFigures = createGroup({ y: GEOMETRY.innerRing.h, parent: carouselGroup });
   createObjects(
     ringElements.innerFigures,
     GEOMETRY.innerRing.ir + (GEOMETRY.innerRing.or - GEOMETRY.innerRing.ir) / 2
   );
 }
 
-function createCentralRing(baseGroup) {
+function createCentralRing() {
   ringElements.centralRing = createRingMesh({
     name: 'centralRing',
     y: GEOMETRY.centralRing.h,
-    parent: baseGroup,
+    parent: carouselGroup,
   });
-  ringElements.centralFigures = createGroup({ y: GEOMETRY.centralRing.h, parent: baseGroup });
+  ringElements.centralFigures = createGroup({ y: GEOMETRY.centralRing.h, parent: carouselGroup });
   createObjects(
     ringElements.centralFigures,
     GEOMETRY.centralRing.ir + (GEOMETRY.centralRing.or - GEOMETRY.centralRing.ir) / 2
   );
 }
 
-function createOuterRing(baseGroup) {
+function createOuterRing() {
   ringElements.outerRing = createRingMesh({
     name: 'outerRing',
     y: GEOMETRY.outerRing.h,
-    parent: baseGroup,
+    parent: carouselGroup,
   });
-  ringElements.outerFigures = createGroup({ y: GEOMETRY.outerRing.h, parent: baseGroup });
+  ringElements.outerFigures = createGroup({ y: GEOMETRY.outerRing.h, parent: carouselGroup });
   createObjects(
     ringElements.outerFigures,
     GEOMETRY.outerRing.ir + (GEOMETRY.outerRing.or - GEOMETRY.outerRing.ir) / 2
