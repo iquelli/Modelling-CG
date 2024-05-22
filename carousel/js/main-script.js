@@ -139,9 +139,9 @@ const GEOMETRY = {
   ),
   mainCylinder: { r: 1, h: 21 },
 
-  innerRing: { ir: 1, or: 4, h: 4, rx: Math.PI / 2 },
-  centralRing: { ir: 4, or: 8, h: 4, rx: Math.PI / 2 },
-  outerRing: { ir: 8, or: 12, h: 4, rx: Math.PI / 2 },
+  innerRing: { ir: 1, or: 5, h: 4, rx: Math.PI / 2 },
+  centralRing: { ir: 5, or: 10, h: 4, rx: Math.PI / 2 },
+  outerRing: { ir: 10, or: 15, h: 4, rx: Math.PI / 2 },
 
   mobiusStrip: { w: 2, h: 17, d: 2 },
 
@@ -347,7 +347,8 @@ function createOuterRing() {
 function createObjects(ringGroup, radius) {
   const figs = ['fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7', 'fig8'];
   const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // 8 possible angles
-  // TODO: fix these disgusting functions below
+  const scales = [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5];
+  const posY = [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75];
   const funcs = [
     (u, v, target) => {
       // hyperboloid
@@ -357,8 +358,8 @@ function createObjects(ringGroup, radius) {
       u = (u - 0.5) * Math.PI;
       v = (v - 0.5) * 2 * Math.PI;
       const x = a * Math.sinh(u) * Math.cos(v);
-      const y = b * Math.sinh(u) * Math.sin(v);
-      const z = c * Math.cosh(u);
+      const z = b * Math.sinh(u) * Math.sin(v);
+      const y = c * Math.cosh(u);
       target.set(x, y, z);
     },
     (u, v, target) => {
@@ -398,28 +399,29 @@ function createObjects(ringGroup, radius) {
     (u, v, target) => {
       // torus knot
       const p = 3,
-        q = 2;
-      const r = 10 + Math.cos(q * v) * 2;
-      const x = r * Math.cos(p * v);
-      const y = r * Math.sin(p * v);
-      const z = Math.sin(q * v) * 2;
+        q = -8;
+      const r = 2 + Math.cos(q * v);
+      const x = r * Math.cos(p * u);
+      const y = r * Math.sin(p * u);
+      const z = -Math.sin(q * u);
       target.set(x, y, z);
     },
     (u, v, target) => {
-      // kuens
-      const a = 0.2;
-      const x =
-        (a + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.cos(u);
-      const y =
-        (a + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.sin(u);
-      const z = Math.sin(u / 2) * Math.sin(v) + Math.cos(u / 2) * Math.sin(2 * v);
+      // sphere
+      const r = 1;
+      const x = r * Math.cos(u * 2 * Math.PI) * Math.sin(v * 2 * Math.PI);
+      const y = r * Math.sin(u * 2 * Math.PI) * Math.sin(v * 2 * Math.PI);
+      const z = r * Math.cos(v * 2 * Math.PI);
       target.set(x, y, z);
     },
     (u, v, target) => {
       // dinis
+      u = u * 4 * Math.PI;
+      if (v == 0) {
+        v = 0.01;
+      }
       const a = 1,
-        b = 0.2,
-        c = 0.3;
+        b = 0.2;
       const x = a * Math.cos(u) * Math.sin(v);
       const y = a * Math.sin(u) * Math.sin(v);
       const z = a * (Math.cos(v) + Math.log(Math.tan(v / 2))) + b * u;
@@ -442,10 +444,10 @@ function createObjects(ringGroup, radius) {
     figures.push(
       createParametricObjectMesh({
         name: fig,
-        x: Math.cos(angles[i]) * radius,
-        y: 3,
-        z: Math.sin(angles[i]) * radius,
-        scale: 0.5,
+        x: Math.cos((angles[i] * Math.PI) / 180) * radius,
+        y: posY.shift(),
+        z: Math.sin((angles[i] * Math.PI) / 180) * radius,
+        scale: scales.shift(),
         parent: ringGroup,
         geomFunc: funcs.shift(),
       })
@@ -932,10 +934,11 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
  */
 function createParametricObjectMesh({ name, x = 0, y = 0, z = 0, scale, parent, geomFunc }) {
   const material = MATERIAL[name].basic;
+  material.side = THREE.DoubleSide;
   const object = new THREE.Mesh(new ParametricGeometry(geomFunc, 25, 25), material);
   object.position.set(x, y, z);
   object.name = name;
-  object.scale.set(scale, scale, scale);
+  object.scale.multiplyScalar(scale);
   parent.add(object);
   return object;
 }
