@@ -408,7 +408,8 @@ function createMobiusStrip() {
 ////////////
 
 function update(timeDelta) {
-  carouselGroup.rotation.y = (carouselGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
+  carouselGroup.rotation.y =
+    (carouselGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
   figures.forEach((figure) => {
     figure.rotation.y = (figure.rotation.y + timeDelta * FIGURE_ANGULAR_VELOCITY) % (2 * Math.PI);
   });
