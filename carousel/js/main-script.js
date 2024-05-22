@@ -119,7 +119,7 @@ let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
 // for translations and rotations
-let baseGroup;
+let baseGroup, carouselGroup;
 const ringElements = {};
 const figures = [];
 
@@ -196,10 +196,11 @@ function createSkyDome() {
 }
 
 function createCarousel() {
-  createMainCylinder(baseGroup);
-  createInnerRing(baseGroup);
-  createCentralRing(baseGroup);
-  createOuterRing(baseGroup);
+  carouselGroup = createGroup({ parent: scene });
+  createMainCylinder(carouselGroup);
+  createInnerRing(carouselGroup);
+  createCentralRing(carouselGroup);
+  createOuterRing(carouselGroup);
   createMobiusStrip();
 }
 
@@ -407,7 +408,7 @@ function createMobiusStrip() {
 ////////////
 
 function update(timeDelta) {
-  baseGroup.rotation.y = (baseGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
+  carouselGroup.rotation.y = (carouselGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
   figures.forEach((figure) => {
     figure.rotation.y = (figure.rotation.y + timeDelta * FIGURE_ANGULAR_VELOCITY) % (2 * Math.PI);
   });
