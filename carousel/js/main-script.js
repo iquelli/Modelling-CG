@@ -141,7 +141,7 @@ function createScene() {
 
   createSkyDome();
   createCarousel();
-  //createMobiusStrip();
+  createMobiusStrip();
 }
 
 //////////////////////
@@ -201,7 +201,6 @@ function createCarousel() {
   createInnerRing(carouselGroup);
   createCentralRing(carouselGroup);
   createOuterRing(carouselGroup);
-  createMobiusStrip();
 }
 
 function createMainCylinder(baseGroup) {
