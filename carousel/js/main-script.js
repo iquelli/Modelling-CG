@@ -125,10 +125,15 @@ const MATERIAL = Object.freeze({
   },
 });
 
-// must be functions because they depend on textures initialized later
-const MATERIAL_PARAMS = {
-  skyDome: () => ({ map: skyMap, side: THREE.BackSide }),
-};
+const LIGHT_INTENSITY = Object.freeze({
+    ambient: 3,
+    directional: 5,
+    point: 2,
+    objectSpotlight: 300,
+})
+
+const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
+const OBJECT_SPOTLIGHT_PENUMBRA = 0.3;
 
 const DOME_RADIUS = 64;
 const SPHERE_SEGMENTS = 32;
@@ -147,8 +152,8 @@ const GEOMETRY = {
     0,
     Math.PI / 2
   ),
-  mainCylinder: { r: 1, h: 21 },
 
+  mainCylinder: { r: 1, h: 21 },
   innerRing: { ir: 1, or: 6, h: 4, rx: Math.PI / 2 },
   centralRing: { ir: 6, or: 12, h: 4, rx: Math.PI / 2 },
   outerRing: { ir: 12, or: 18, h: 4, rx: Math.PI / 2 },
@@ -210,6 +215,11 @@ const figures = [];
 // flags for event handlers
 let updateProjectionMatrix = false;
 let toggleActiveCamera = false;
+let toggleObjectSpotlight = false;
+
+// lights
+let ambientLight, directionalLight;
+let objectSpotlights = [];
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -272,13 +282,30 @@ function refreshCameraParameters(camera) {
 /* CREATE LIGHT(S) */
 /////////////////////
 
-const ambientLight = new THREE.AmbientLight(0xff5500, 1);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
-
 function createLights() {
+  ambientLight = new THREE.AmbientLight(0xff5500, LIGHT_INTENSITY.ambient);
   baseGroup.add(ambientLight);
+  directionalLight = new THREE.DirectionalLight(0xffffff, LIGHT_INTENSITY.directional)
   directionalLight.position.set(0.5, 1, 0);
   baseGroup.add(directionalLight);
+}
+
+function createSpotlight(x, y, z, ringGroup) {
+    // Create and position the spotlight
+    const spotlightTarget = new THREE.Object3D();
+    spotlightTarget.position.set(x, y, z); // point at figure
+    ringGroup.add(spotlightTarget);
+
+    const spotLight = new THREE.SpotLight(0xffffff, LIGHT_INTENSITY.objectSpotlight);
+    spotLight.position.set(x, y-8, z); // Position it under the figure, so it points to its base
+    spotLight.target = spotlightTarget;
+    spotLight.angle = OBJECT_SPOTLIGHT_ANGLE;
+    spotLight.penumbra = OBJECT_SPOTLIGHT_PENUMBRA;
+    spotLight.castShadow = true;
+
+    ringGroup.add(spotLight);
+
+    objectSpotlights.push(spotLight);
 }
 
 ////////////////////////
@@ -286,7 +313,7 @@ function createLights() {
 ////////////////////////
 
 function createSkyDome() {
-  const material = new THREE.MeshPhongMaterial({ ...MATERIAL_PARAMS.skyDome() });
+  const material = new THREE.MeshPhongMaterial({ map: skyMap, side: THREE.BackSide });
   const plane = new THREE.Mesh(GEOMETRY.skyDome, material);
   plane.name = 'skydome';
   baseGroup.add(plane);
@@ -453,18 +480,24 @@ function createObjects(ringGroup, radius, scales, yaxis) {
 
   figs.forEach((fig) => {
     var i = Math.floor(Math.random() * angles.length);
+    const x = Math.cos((angles[i] * Math.PI) / 180) * radius;
+    const y = yaxis.shift();
+    const z = Math.sin((angles[i] * Math.PI) / 180) * radius;
+
     figures.push(
       createParametricObjectMesh({
         name: fig,
-        x: Math.cos((angles[i] * Math.PI) / 180) * radius,
-        y: yaxis.shift(),
-        z: Math.sin((angles[i] * Math.PI) / 180) * radius,
+        x: x,
+        y: y,
+        z: z,
         scale: scales.shift(),
         parent: ringGroup,
         geomFunc: funcs.shift(),
       })
     );
     angles.splice(i, 1); // Remove used up angle
+
+    createSpotlight(x, y, z, ringGroup);
   });
 }
 
@@ -554,6 +587,7 @@ function update(timeDelta) {
     }
   });
 
+  // cameras
   if (updateProjectionMatrix) {
     const isXrPresenting = renderer.xr.isPresenting;
     renderer.xr.isPresenting = false;
@@ -569,6 +603,14 @@ function update(timeDelta) {
     toggleActiveCamera = false;
     activeCamera = activeCamera == ORBITAL_CAMERA ? FIXED_CAMERA : ORBITAL_CAMERA;
     refreshCameraParameters(activeCamera);
+  }
+
+  // lights
+  if (toggleObjectSpotlight) {
+    toggleObjectSpotlight = !toggleObjectSpotlight;
+    objectSpotlights.forEach(spotLight => {
+        spotLight.visible = !spotLight.visible;
+    });
   }
 }
 
@@ -687,7 +729,7 @@ const keyHandlers = {
   KeyR: meshHandleFactory('normal'),
   KeyT: meshHandleFactory('basic'),
   //KeyP:
-  //KeyS:
+  KeyS: toggleObjectLighting(),
 
   // EXTRA
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
@@ -726,6 +768,15 @@ function toggleGlobalLighting() {
     }
     directionalLight.visible = !directionalLight.visible;
   };
+}
+
+function toggleObjectLighting() {
+    return (event, isKeyDown) => {
+        if (!isKeyDown || event.repeat) {
+          return;
+        }
+        toggleObjectSpotlight = !toggleObjectSpotlight;
+    };
 }
 
 function keyActionFactory(handler) {
