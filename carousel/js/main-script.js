@@ -204,6 +204,10 @@ const FIXED_CAMERA = createPerspectiveCamera({
 let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
+// lights
+let directionalLight, activeMaterial;
+let materialChanged = false;
+
 // textures
 let skyMap;
 
@@ -587,6 +591,24 @@ function update(timeDelta) {
     }
   });
 
+  if (materialChanged) {
+    materialChanged = false;
+    scene.traverse((object) => {
+      if (object.isMesh && object.name !== 'skydome') {
+        object.material = MATERIAL[object.name][activeMaterial];
+      }
+    });
+  }
+
+  if (materialChanged) {
+    materialChanged = false;
+    scene.traverse((object) => {
+      if (object.isMesh && object.name !== 'skydome') {
+        object.material = MATERIAL[object.name][activeMaterial];
+      }
+    });
+  }
+
   // cameras
   if (updateProjectionMatrix) {
     const isXrPresenting = renderer.xr.isPresenting;
@@ -722,12 +744,12 @@ const keyHandlers = {
   Digit2: movementHandleFactory(['centralFigures', 'centralRing']),
   Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
 
-  KeyD: toggleGlobalLighting(),
-  KeyQ: meshHandleFactory('lambert'),
-  KeyW: meshHandleFactory('phong'),
-  KeyE: meshHandleFactory('toon'),
-  KeyR: meshHandleFactory('normal'),
-  KeyT: meshHandleFactory('basic'),
+  KeyD: keyActionFactory(() => (directionalLight.visible = !directionalLight.visible)),
+  KeyQ: materialHandleFactory('lambert'),
+  KeyW: materialHandleFactory('phong'),
+  KeyE: materialHandleFactory('toon'),
+  KeyR: materialHandleFactory('normal'),
+  KeyT: materialHandleFactory('basic'),
   //KeyP:
   KeyS: toggleObjectLighting(),
 
@@ -746,20 +768,11 @@ function movementHandleFactory(parts) {
   };
 }
 
-function meshHandleFactory(meshType) {
-  return (event, isKeyDown) => {
-    if (!isKeyDown || event.repeat) {
-      return;
-    }
-    scene.traverse((object) => {
-      if (object.isMesh && object.name !== 'skydome') {
-        const material = MATERIAL[object.name][meshType];
-        object.material = material;
-        material.needsUpdate = true;
-      }
-    });
-  };
-}
+function materialHandleFactory(material) {
+  return keyActionFactory(() => {
+    activeMaterial = material;
+    materialChanged = true;
+  });
 
 function toggleGlobalLighting() {
   return (event, isKeyDown) => {
