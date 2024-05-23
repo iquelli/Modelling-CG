@@ -204,10 +204,6 @@ const FIXED_CAMERA = createPerspectiveCamera({
 let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
-// lights
-let directionalLight, activeMaterial;
-let materialChanged = false;
-
 // textures
 let skyMap;
 
@@ -222,6 +218,8 @@ let toggleActiveCamera = false;
 let toggleObjectSpotlight = false;
 
 // lights
+let activeMaterial;
+let materialChanged = false;
 let ambientLight, directionalLight;
 let objectSpotlights = [];
 
@@ -751,7 +749,7 @@ const keyHandlers = {
   KeyR: materialHandleFactory('normal'),
   KeyT: materialHandleFactory('basic'),
   //KeyP:
-  KeyS: toggleObjectLighting(),
+  KeyS:  keyActionFactory(() => (toggleObjectSpotlight = !toggleObjectSpotlight)),
 
   // EXTRA
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
@@ -773,23 +771,6 @@ function materialHandleFactory(material) {
     activeMaterial = material;
     materialChanged = true;
   });
-
-function toggleGlobalLighting() {
-  return (event, isKeyDown) => {
-    if (!isKeyDown || event.repeat) {
-      return;
-    }
-    directionalLight.visible = !directionalLight.visible;
-  };
-}
-
-function toggleObjectLighting() {
-    return (event, isKeyDown) => {
-        if (!isKeyDown || event.repeat) {
-          return;
-        }
-        toggleObjectSpotlight = !toggleObjectSpotlight;
-    };
 }
 
 function keyActionFactory(handler) {
