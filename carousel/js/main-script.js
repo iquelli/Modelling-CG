@@ -126,10 +126,10 @@ const MATERIAL = Object.freeze({
 });
 
 const LIGHT_INTENSITY = Object.freeze({
-  ambient: 3,
-  directional: 5,
+  ambient: 1,
+  directional: 2,
   point: 2,
-  objectSpotlight: 300,
+  objectSpotlight: 100,
 });
 
 const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
