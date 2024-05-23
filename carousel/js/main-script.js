@@ -16,9 +16,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const BACKGROUND = new THREE.Color(0x230000);
 
-const DOME_RADIUS = 64;
-const SPHERE_SEGMENTS = 32;
-
 const MATERIAL = Object.freeze({
   // Main cylinder
   mainCylinder: {
@@ -29,11 +26,11 @@ const MATERIAL = Object.freeze({
     normal: new THREE.MeshNormalMaterial(),
   },
 
-  // Outer ring, central ring, inner ring
-  outerRing: {
+  // Inner ring, central ring and outer ring
+  innerRing: {
     basic: new THREE.MeshBasicMaterial({ color: '#990000' }),
     lambert: new THREE.MeshLambertMaterial({ color: '#990000' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#990000', shininess: 50 }),
+    phong: new THREE.MeshPhongMaterial({ color: '#990000', shininess: 70 }),
     toon: new THREE.MeshToonMaterial({ color: '#990000' }),
     normal: new THREE.MeshNormalMaterial(),
   },
@@ -44,10 +41,10 @@ const MATERIAL = Object.freeze({
     toon: new THREE.MeshToonMaterial({ color: '#fffcdf' }),
     normal: new THREE.MeshNormalMaterial(),
   },
-  innerRing: {
+  outerRing: {
     basic: new THREE.MeshBasicMaterial({ color: '#990000' }),
     lambert: new THREE.MeshLambertMaterial({ color: '#990000' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#990000', shininess: 70 }),
+    phong: new THREE.MeshPhongMaterial({ color: '#990000', shininess: 50 }),
     toon: new THREE.MeshToonMaterial({ color: '#990000' }),
     normal: new THREE.MeshNormalMaterial(),
   },
@@ -133,6 +130,11 @@ const MATERIAL_PARAMS = {
   skyDome: () => ({ map: skyMap, side: THREE.BackSide }),
 };
 
+const DOME_RADIUS = 64;
+const SPHERE_SEGMENTS = 32;
+
+const SKY_MAP_PATH = './assets/an-optical-poem.jpg';
+
 // box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
 // cylinder and sphere: r = radius, rx = rotation on X axis, etc.
 const GEOMETRY = {
@@ -172,23 +174,22 @@ const BASE_ANGULAR_VELOCITY = (2 * Math.PI) / 10; // 10 seconds for one rotation
 const FIGURE_ANGULAR_VELOCITY = (2 * Math.PI) / 5; // 5 seconds for one rotation
 const RING_LINEAR_VELOCITY = 5; // 5 units per second
 
-const SKY_MAP_PATH = './assets/an-optical-poem.jpg';
-
 const ORBITAL_CAMERA = createPerspectiveCamera({
-  fov: 80,
-  near: 1,
-  far: 1000,
-  x: -30,
-  y: 40,
-  z: -50,
-});
-const FIXED_CAMERA = createPerspectiveCamera({
   fov: 60,
   near: 1,
   far: 1000,
   x: -32,
-  y: 40,
+  y: 19,
   z: -50,
+});
+const FIXED_CAMERA = createPerspectiveCamera({
+  fov: 55,
+  near: 1,
+  far: 1000,
+  x: -32,
+  y: 19,
+  z: -50,
+  atY: -17,
 });
 
 //////////////////////
@@ -198,30 +199,17 @@ const FIXED_CAMERA = createPerspectiveCamera({
 let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
+// textures
+let skyMap;
+
 // for translations and rotations
 let baseGroup, carouselGroup;
 const ringElements = {};
 const figures = [];
 
-// textures
-let skyMap;
-
 // flags for event handlers
 let updateProjectionMatrix = false;
 let toggleActiveCamera = false;
-
-/////////////////////
-/* CREATE LIGHT(S) */
-/////////////////////
-
-const ambientLight = new THREE.AmbientLight(0xff5500, 1);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
-
-function createLights() {
-  baseGroup.add(ambientLight);
-  directionalLight.position.set(0.5, 1, 0);
-  baseGroup.add(directionalLight);
-}
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -231,7 +219,7 @@ function createScene() {
   scene = new THREE.Scene();
   scene.background = BACKGROUND;
 
-  baseGroup = createGroup({ parent: scene });
+  baseGroup = createGroup({ y: -21, parent: scene });
   carouselGroup = createGroup({ parent: baseGroup });
 
   createLights();
@@ -246,7 +234,7 @@ function createScene() {
 
 function createCameras() {
   const controls = new OrbitControls(ORBITAL_CAMERA, renderer.domElement);
-  controls.target.set(0, 0, 0);
+  controls.target.set(0, -17, 0);
   controls.keys = {
     LEFT: 72, // h
     UP: 75, // k
@@ -278,6 +266,19 @@ function createPerspectiveCamera({
 function refreshCameraParameters(camera) {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+}
+
+/////////////////////
+/* CREATE LIGHT(S) */
+/////////////////////
+
+const ambientLight = new THREE.AmbientLight(0xff5500, 1);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
+
+function createLights() {
+  baseGroup.add(ambientLight);
+  directionalLight.position.set(0.5, 1, 0);
+  baseGroup.add(directionalLight);
 }
 
 ////////////////////////
@@ -473,52 +474,37 @@ function createMobiusStrip() {
   // prettier-ignore
   // Define vertices manually measured for a Möbius strip with radius 12 and width 3
   const vertices = new Float32Array([
-    // X       Y       Z        // Vertex #
+    // X       Y       Z           Vertex #
     12,        1.5,    0,       // 0
     9,         1.5,    0,       // 1
-
     10.5,      1.6,    5.4,     // 2
     8.6,       1.4,    4.2,     // 3
-
     8,         1.7,    9,       // 4
     6.25,      1.3,    7,       // 5
-
     4,         2.1,    11.25,   // 6
     3.25,      0.9,    9.5,     // 7
-
     0,         2.5,    12,      // 8
     0,         0.5,    10.5,    // 9
-
     -4,        2.8,    11.25,   // 10
     -3.75,     0.2,    10.4,    // 11
-
     -8,        2.9,    9,       // 12
     -7.75,     0.1,    8.75,    // 13
-
     -10.5,     2.95,   5.4,     // 14
     -10.5,     0.05,   5.4,     // 15
-
     -12,       3,      0,       // 16
     -12,       0,      0,       // 17
-
     -10.5,     2.95,   -5.4,    // 18
     -10.5,     0.05,   -5.4,    // 19
-
     -8,        0.1,    -8.75,   // 20
     -7.75,     2.9,    -8.75,   // 21
-
     -4,        0.2,    -11.25,  // 22
     -3.75,     2.8,    -10.4,   // 23
-
     0,         0.5,    -12,     // 24
     0,         2.5,    -10.5,   // 25
-
     4,         0.9,    -11.25,  // 26
     3.25,      2.2,    -9.5,    // 27
-
     8,         1.3,    -9,      // 28
     6.25,      1.7,    -7,      // 29
-
     10.5,      1.5,    -5.4,    // 30
     8.6,       1.5,    -4.2,    // 31
   ]);
