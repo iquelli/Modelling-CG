@@ -319,6 +319,8 @@ function createInnerRing() {
     [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
     [-1, 1.6, 1.2, 1, 0, 1, 0.42, 0.75]
   );
+  ringElements.innerRing.movementFlag = true;
+  ringElements.innerFigures.movementFlag = true;
 }
 
 function createCentralRing() {
@@ -334,6 +336,8 @@ function createCentralRing() {
     [0.7, 0.3, 0.6, 0.4, 0.6, 1.2, 0.7, 0.7],
     [-1.4, 2.4, 1.8, 2, 0, 1.2, 0.59, 1.05]
   );
+  ringElements.centralRing.movementFlag = true;
+  ringElements.centralFigures.movementFlag = true;
 }
 
 function createOuterRing() {
@@ -349,6 +353,8 @@ function createOuterRing() {
     [0.9, 0.4, 0.8, 0.6, 0.8, 1.4, 0.8, 0.9],
     [-1.8, 3.2, 2.4, 3, 0, 1.4, 0.67, 1.35]
   );
+  ringElements.outerRing.movementFlag = true;
+  ringElements.outerFigures.movementFlag = true;
 }
 
 function createObjects(ringGroup, radius, scales, yaxis) {
@@ -541,7 +547,7 @@ function createMobiusStrip() {
   mobiusStrip.position.set(0, 21, 0);
   mobiusStrip.name = 'mobiusStrip';
 
-  scene.add(mobiusStrip);
+  baseGroup.add(mobiusStrip);
 }
 
 ////////////
