@@ -126,11 +126,11 @@ const MATERIAL = Object.freeze({
 });
 
 const LIGHT_INTENSITY = Object.freeze({
-    ambient: 3,
-    directional: 5,
-    point: 2,
-    objectSpotlight: 300,
-})
+  ambient: 3,
+  directional: 5,
+  point: 2,
+  objectSpotlight: 300,
+});
 
 const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
 const OBJECT_SPOTLIGHT_PENUMBRA = 0.3;
@@ -287,27 +287,27 @@ function refreshCameraParameters(camera) {
 function createLights() {
   ambientLight = new THREE.AmbientLight(0xff5500, LIGHT_INTENSITY.ambient);
   baseGroup.add(ambientLight);
-  directionalLight = new THREE.DirectionalLight(0xffffff, LIGHT_INTENSITY.directional)
+  directionalLight = new THREE.DirectionalLight(0xffffff, LIGHT_INTENSITY.directional);
   directionalLight.position.set(0.5, 1, 0);
   baseGroup.add(directionalLight);
 }
 
 function createSpotlight(x, y, z, ringGroup) {
-    // Create and position the spotlight
-    const spotlightTarget = new THREE.Object3D();
-    spotlightTarget.position.set(x, y, z); // point at figure
-    ringGroup.add(spotlightTarget);
+  // Create and position the spotlight
+  const spotlightTarget = new THREE.Object3D();
+  spotlightTarget.position.set(x, y, z); // point at figure
+  ringGroup.add(spotlightTarget);
 
-    const spotLight = new THREE.SpotLight(0xffffff, LIGHT_INTENSITY.objectSpotlight);
-    spotLight.position.set(x, y-8, z); // Position it under the figure, so it points to its base
-    spotLight.target = spotlightTarget;
-    spotLight.angle = OBJECT_SPOTLIGHT_ANGLE;
-    spotLight.penumbra = OBJECT_SPOTLIGHT_PENUMBRA;
-    spotLight.castShadow = true;
+  const spotLight = new THREE.SpotLight(0xffffff, LIGHT_INTENSITY.objectSpotlight);
+  spotLight.position.set(x, y - 8, z); // Position it under the figure, so it points to its base
+  spotLight.target = spotlightTarget;
+  spotLight.angle = OBJECT_SPOTLIGHT_ANGLE;
+  spotLight.penumbra = OBJECT_SPOTLIGHT_PENUMBRA;
+  spotLight.castShadow = true;
 
-    ringGroup.add(spotLight);
+  ringGroup.add(spotLight);
 
-    objectSpotlights.push(spotLight);
+  objectSpotlights.push(spotLight);
 }
 
 ////////////////////////
@@ -628,8 +628,8 @@ function update(timeDelta) {
   // lights
   if (toggleObjectSpotlight) {
     toggleObjectSpotlight = !toggleObjectSpotlight;
-    objectSpotlights.forEach(spotLight => {
-        spotLight.visible = !spotLight.visible;
+    objectSpotlights.forEach((spotLight) => {
+      spotLight.visible = !spotLight.visible;
     });
   }
 }
@@ -749,7 +749,7 @@ const keyHandlers = {
   KeyR: materialHandleFactory('normal'),
   KeyT: materialHandleFactory('basic'),
   //KeyP:
-  KeyS:  keyActionFactory(() => (toggleObjectSpotlight = !toggleObjectSpotlight)),
+  KeyS: keyActionFactory(() => (toggleObjectSpotlight = !toggleObjectSpotlight)),
 
   // EXTRA
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
