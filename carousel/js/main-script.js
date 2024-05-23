@@ -200,7 +200,8 @@ let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
 // lights
-let directionalLight;
+let directionalLight, activeMaterial;
+let materialChanged = false;
 
 // textures
 let skyMap;
@@ -557,6 +558,15 @@ function update(timeDelta) {
     }
   });
 
+  if (materialChanged) {
+    materialChanged = false;
+    scene.traverse((object) => {
+      if (object.isMesh && object.name !== 'skydome') {
+        object.material = MATERIAL[object.name][activeMaterial];
+      }
+    });
+  }
+
   if (updateProjectionMatrix) {
     const isXrPresenting = renderer.xr.isPresenting;
     renderer.xr.isPresenting = false;
@@ -684,11 +694,11 @@ const keyHandlers = {
   Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
 
   KeyD: keyActionFactory(() => (directionalLight.visible = !directionalLight.visible)),
-  KeyQ: meshHandleFactory('lambert'),
-  KeyW: meshHandleFactory('phong'),
-  KeyE: meshHandleFactory('toon'),
-  KeyR: meshHandleFactory('normal'),
-  KeyT: meshHandleFactory('basic'),
+  KeyQ: materialHandleFactory('lambert'),
+  KeyW: materialHandleFactory('phong'),
+  KeyE: materialHandleFactory('toon'),
+  KeyR: materialHandleFactory('normal'),
+  KeyT: materialHandleFactory('basic'),
   //KeyP:
   //KeyS:
 
@@ -707,19 +717,11 @@ function movementHandleFactory(parts) {
   };
 }
 
-function meshHandleFactory(meshType) {
-  return (event, isKeyDown) => {
-    if (!isKeyDown || event.repeat) {
-      return;
-    }
-    scene.traverse((object) => {
-      if (object.isMesh && object.name !== 'skydome') {
-        const material = MATERIAL[object.name][meshType];
-        object.material = material;
-        material.needsUpdate = true;
-      }
-    });
-  };
+function materialHandleFactory(material) {
+  return keyActionFactory(() => {
+    activeMaterial = material;
+    materialChanged = true;
+  });
 }
 
 function keyActionFactory(handler) {
