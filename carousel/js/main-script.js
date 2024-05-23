@@ -128,8 +128,8 @@ const MATERIAL = Object.freeze({
 const LIGHT_INTENSITY = Object.freeze({
   ambient: 1,
   directional: 2,
-  point: 2,
-  objectSpotlight: 100,
+  spotlight: 100,
+  point: 20,
 });
 
 const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
@@ -216,11 +216,13 @@ const figures = [];
 let updateProjectionMatrix = false;
 let toggleActiveCamera = false;
 let toggleObjectSpotlight = false;
+let toggleMobiusLight = false;
 
 // lights
 let ambientLight, directionalLight, activeMaterial;
 let materialChanged = false;
 let objectSpotlights = [];
+let mobiusLights = [];
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -289,6 +291,7 @@ function createLights() {
   directionalLight = new THREE.DirectionalLight(0xffffff, LIGHT_INTENSITY.directional);
   directionalLight.position.set(0.5, 1, 0);
   baseGroup.add(directionalLight);
+  createMobiusLights();
 }
 
 function createSpotlight(x, y, z, ringGroup) {
@@ -297,15 +300,26 @@ function createSpotlight(x, y, z, ringGroup) {
   spotlightTarget.position.set(x, y, z); // point at figure
   ringGroup.add(spotlightTarget);
 
-  const spotLight = new THREE.SpotLight(0xffffff, LIGHT_INTENSITY.objectSpotlight);
+  const spotLight = new THREE.SpotLight(0xffffff, LIGHT_INTENSITY.spotlight);
   spotLight.position.set(x, y - 8, z); // Position it under the figure, so it points to its base
   spotLight.target = spotlightTarget;
   spotLight.angle = OBJECT_SPOTLIGHT_ANGLE;
   spotLight.penumbra = OBJECT_SPOTLIGHT_PENUMBRA;
-  spotLight.castShadow = true;
   ringGroup.add(spotLight);
 
   objectSpotlights.push(spotLight);
+}
+
+function createMobiusLights() {
+  [0, 45, 90, 135, 180, 225, 270, 315].forEach((angle) => {
+    const pointLight = new THREE.PointLight(0xffffff, LIGHT_INTENSITY.point);
+    const x = Math.cos((angle * Math.PI) / 180) * 12;
+    const z = Math.sin((angle * Math.PI) / 180) * 12;
+    pointLight.position.set(x, 24, z);
+    baseGroup.add(pointLight);
+
+    mobiusLights.push(pointLight);
+  });
 }
 
 ////////////////////////
@@ -623,6 +637,12 @@ function update(timeDelta) {
       spotLight.visible = !spotLight.visible;
     });
   }
+  if (toggleMobiusLight) {
+    toggleMobiusLight = !toggleMobiusLight;
+    mobiusLights.forEach((light) => {
+      light.visible = !light.visible;
+    });
+  }
 }
 
 function moveDynamicPart(timeDelta, { part, profile }) {
@@ -739,7 +759,7 @@ const keyHandlers = {
   KeyE: materialHandleFactory('toon'),
   KeyR: materialHandleFactory('normal'),
   KeyT: materialHandleFactory('basic'),
-  //KeyP:
+  KeyP: keyActionFactory(() => (toggleMobiusLight = !toggleMobiusLight)),
   KeyS: keyActionFactory(() => (toggleObjectSpotlight = !toggleObjectSpotlight)),
 
   // EXTRA
