@@ -199,6 +199,9 @@ const FIXED_CAMERA = createPerspectiveCamera({
 let renderer, scene;
 let activeCamera = FIXED_CAMERA;
 
+// lights
+let directionalLight;
+
 // textures
 let skyMap;
 
@@ -272,11 +275,11 @@ function refreshCameraParameters(camera) {
 /* CREATE LIGHT(S) */
 /////////////////////
 
-const ambientLight = new THREE.AmbientLight(0xff5500, 1);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
-
 function createLights() {
+  const ambientLight = new THREE.AmbientLight(0xff5500, 1);
   baseGroup.add(ambientLight);
+
+  directionalLight = new THREE.DirectionalLight(0xffffff, 5);
   directionalLight.position.set(0.5, 1, 0);
   baseGroup.add(directionalLight);
 }
@@ -680,7 +683,7 @@ const keyHandlers = {
   Digit2: movementHandleFactory(['centralFigures', 'centralRing']),
   Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
 
-  KeyD: toggleGlobalLighting(),
+  KeyD: keyActionFactory(() => (directionalLight.visible = !directionalLight.visible)),
   KeyQ: meshHandleFactory('lambert'),
   KeyW: meshHandleFactory('phong'),
   KeyE: meshHandleFactory('toon'),
@@ -716,15 +719,6 @@ function meshHandleFactory(meshType) {
         material.needsUpdate = true;
       }
     });
-  };
-}
-
-function toggleGlobalLighting() {
-  return (event, isKeyDown) => {
-    if (!isKeyDown || event.repeat) {
-      return;
-    }
-    directionalLight.visible = !directionalLight.visible;
   };
 }
 
