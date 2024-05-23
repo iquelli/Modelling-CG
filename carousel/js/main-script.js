@@ -218,9 +218,8 @@ let toggleActiveCamera = false;
 let toggleObjectSpotlight = false;
 
 // lights
-let activeMaterial;
+let ambientLight, directionalLight, activeMaterial;
 let materialChanged = false;
-let ambientLight, directionalLight;
 let objectSpotlights = [];
 
 /////////////////////
@@ -304,7 +303,6 @@ function createSpotlight(x, y, z, ringGroup) {
   spotLight.angle = OBJECT_SPOTLIGHT_ANGLE;
   spotLight.penumbra = OBJECT_SPOTLIGHT_PENUMBRA;
   spotLight.castShadow = true;
-
   ringGroup.add(spotLight);
 
   objectSpotlights.push(spotLight);
@@ -576,28 +574,21 @@ function createMobiusStrip() {
 ////////////
 
 function update(timeDelta) {
+  // rotations
   carouselGroup.rotation.y =
     (carouselGroup.rotation.y + timeDelta * BASE_ANGULAR_VELOCITY) % (2 * Math.PI);
   figures.forEach((figure) => {
     figure.rotation.y = (figure.rotation.y + timeDelta * FIGURE_ANGULAR_VELOCITY) % (2 * Math.PI);
   });
 
-  // COMPUTE ANIMATION FOR RINGS
+  // compute animation for rings
   CAROUSEL_DYNAMIC_PARTS.forEach((dynamicPart) => {
     if (ringElements[dynamicPart.part]?.movementFlag) {
       DEGREES_OF_FREEDOM[dynamicPart.profile].applier(timeDelta, dynamicPart);
     }
   });
 
-  if (materialChanged) {
-    materialChanged = false;
-    scene.traverse((object) => {
-      if (object.isMesh && object.name !== 'skydome') {
-        object.material = MATERIAL[object.name][activeMaterial];
-      }
-    });
-  }
-
+  // materials
   if (materialChanged) {
     materialChanged = false;
     scene.traverse((object) => {
