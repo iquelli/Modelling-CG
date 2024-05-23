@@ -55,7 +55,7 @@ const MATERIAL = Object.freeze({
   // Mobius strip
   mobiusStrip: {
     basic: new THREE.MeshBasicMaterial({ color: '#990000' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#990000', emissive: '#ff0000' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#990000' }),
     phong: new THREE.MeshPhongMaterial({ color: '#990000', specular: '#ffffff', shininess: 30 }),
     toon: new THREE.MeshToonMaterial({ color: '#990000', opacity: 0.7 }),
     normal: new THREE.MeshNormalMaterial(),
@@ -63,59 +63,67 @@ const MATERIAL = Object.freeze({
 
   // Figures 1-8
   fig1: {
-    basic: new THREE.MeshBasicMaterial({ color: '#ffbf42' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#ffbf42', emissive: '#ffff00' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#ffbf42', shininess: 80 }),
-    toon: new THREE.MeshToonMaterial({ color: '#ffbf42' }),
+    // hyperboloid
+    basic: new THREE.MeshBasicMaterial({ color: '#008b8b' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#008b8b' }),
+    phong: new THREE.MeshPhongMaterial({ color: '#008b8b', shininess: 80 }),
+    toon: new THREE.MeshToonMaterial({ color: '#008b8b' }),
     normal: new THREE.MeshNormalMaterial(),
   },
   fig2: {
-    basic: new THREE.MeshBasicMaterial({ color: '#ff6f6b' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#ff6f6b', emissive: '#ff0000' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#ff6f6b', shininess: 60 }),
-    toon: new THREE.MeshToonMaterial({ color: '#ff6f6b' }),
-    normal: new THREE.MeshNormalMaterial(),
+    // klein bottle
+    basic: new THREE.MeshBasicMaterial({ color: '#f8766d', side: THREE.DoubleSide }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#f8766d', side: THREE.DoubleSide }),
+    phong: new THREE.MeshPhongMaterial({ color: '#f8766d', shininess: 60, side: THREE.DoubleSide }),
+    toon: new THREE.MeshToonMaterial({ color: '#f8766d', side: THREE.DoubleSide }),
+    normal: new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }),
   },
   fig3: {
-    basic: new THREE.MeshBasicMaterial({ color: '#FFF06E' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#FFF06E', emissive: '#ffcc00' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#FFF06E', shininess: 70 }),
-    toon: new THREE.MeshToonMaterial({ color: '#FFF06E' }),
+    // torus
+    basic: new THREE.MeshBasicMaterial({ color: '#ffcc00' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#ffcc00' }),
+    phong: new THREE.MeshPhongMaterial({ color: '#ffcc00', shininess: 70 }),
+    toon: new THREE.MeshToonMaterial({ color: '#ffcc00' }),
     normal: new THREE.MeshNormalMaterial(),
   },
   fig4: {
-    basic: new THREE.MeshBasicMaterial({ color: '#F5F8DE' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#F5F8DE', emissive: '#ffffcc' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#F5F8DE', shininess: 50 }),
-    toon: new THREE.MeshToonMaterial({ color: '#F5F8DE' }),
-    normal: new THREE.MeshNormalMaterial(),
+    // plane
+    basic: new THREE.MeshBasicMaterial({ color: '#55565b', side: THREE.DoubleSide }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#55565b', side: THREE.DoubleSide }),
+    phong: new THREE.MeshPhongMaterial({ color: '#55565b', shininess: 50, side: THREE.DoubleSide }),
+    toon: new THREE.MeshToonMaterial({ color: '#55565b', side: THREE.DoubleSide }),
+    normal: new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }),
   },
   fig5: {
-    basic: new THREE.MeshBasicMaterial({ color: '#32ff7e' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#32ff7e', emissive: '#00ff00' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#32ff7e', shininess: 60 }),
-    toon: new THREE.MeshToonMaterial({ color: '#32ff7e' }),
+    // torus knot
+    basic: new THREE.MeshBasicMaterial({ color: '#00ff7f' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#00ff7f' }),
+    phong: new THREE.MeshPhongMaterial({ color: '#00ff7f', shininess: 60 }),
+    toon: new THREE.MeshToonMaterial({ color: '#00ff7f' }),
     normal: new THREE.MeshNormalMaterial(),
   },
   fig6: {
-    basic: new THREE.MeshBasicMaterial({ color: '#661F99' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#661F99', emissive: '#9900cc' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#661F99', shininess: 70 }),
-    toon: new THREE.MeshToonMaterial({ color: '#661F99' }),
+    // sphere
+    basic: new THREE.MeshBasicMaterial({ color: '#661f99' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#661f99' }),
+    phong: new THREE.MeshPhongMaterial({ color: '#661f99', shininess: 70 }),
+    toon: new THREE.MeshToonMaterial({ color: '#661f99' }),
     normal: new THREE.MeshNormalMaterial(),
   },
   fig7: {
-    basic: new THREE.MeshBasicMaterial({ color: '#8338EC' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#8338EC', emissive: '#cc66ff' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#8338EC', shininess: 80 }),
-    toon: new THREE.MeshToonMaterial({ color: '#8338EC' }),
-    normal: new THREE.MeshNormalMaterial(),
+    // dinis
+    basic: new THREE.MeshBasicMaterial({ color: '#40e0d0', side: THREE.DoubleSide }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#40e0d0', side: THREE.DoubleSide }),
+    phong: new THREE.MeshPhongMaterial({ color: '#40e0d0', shininess: 80, side: THREE.DoubleSide }),
+    toon: new THREE.MeshToonMaterial({ color: '#40e0d0', side: THREE.DoubleSide }),
+    normal: new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }),
   },
   fig8: {
-    basic: new THREE.MeshBasicMaterial({ color: '#3A86FF' }),
-    lambert: new THREE.MeshLambertMaterial({ color: '#3A86FF', emissive: '#6699ff' }),
-    phong: new THREE.MeshPhongMaterial({ color: '#3A86FF', shininess: 90 }),
-    toon: new THREE.MeshToonMaterial({ color: '#3A86FF' }),
+    // ellipsoid
+    basic: new THREE.MeshBasicMaterial({ color: '#3a86ff' }),
+    lambert: new THREE.MeshLambertMaterial({ color: '#3a86ff' }),
+    phong: new THREE.MeshPhongMaterial({ color: '#3a86ff', shininess: 90 }),
+    toon: new THREE.MeshToonMaterial({ color: '#3a86ff' }),
     normal: new THREE.MeshNormalMaterial(),
   },
 });
@@ -139,15 +147,9 @@ const GEOMETRY = {
   ),
   mainCylinder: { r: 1, h: 21 },
 
-  innerRing: { ir: 1, or: 5, h: 4, rx: Math.PI / 2 },
-  centralRing: { ir: 5, or: 10, h: 4, rx: Math.PI / 2 },
-  outerRing: { ir: 10, or: 15, h: 4, rx: Math.PI / 2 },
-
-  mobiusStrip: { w: 2, h: 17, d: 2 },
-
-  bigFigure: { w: 2, h: 3, d: 2 },
-  mediumFigure: { r: 1.5 },
-  smallFigure: { r: 2 },
+  innerRing: { ir: 1, or: 6, h: 4, rx: Math.PI / 2 },
+  centralRing: { ir: 6, or: 12, h: 4, rx: Math.PI / 2 },
+  outerRing: { ir: 12, or: 18, h: 4, rx: Math.PI / 2 },
 };
 
 // degrees of freedom for each profile
@@ -216,9 +218,9 @@ const ambientLight = new THREE.AmbientLight(0xff5500, 1);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
 
 function createLights() {
-  scene.add(ambientLight);
+  baseGroup.add(ambientLight);
   directionalLight.position.set(0.5, 1, 0);
-  scene.add(directionalLight);
+  baseGroup.add(directionalLight);
 }
 
 /////////////////////
@@ -227,13 +229,12 @@ function createLights() {
 
 function createScene() {
   scene = new THREE.Scene();
-  scene.add(new THREE.AxesHelper(20));
   scene.background = BACKGROUND;
-  createLights();
 
   baseGroup = createGroup({ parent: scene });
   carouselGroup = createGroup({ parent: baseGroup });
 
+  createLights();
   createSkyDome();
   createCarousel();
   createMobiusStrip();
@@ -316,7 +317,7 @@ function createInnerRing() {
     ringElements.innerFigures,
     GEOMETRY.innerRing.ir + (GEOMETRY.innerRing.or - GEOMETRY.innerRing.ir) / 2,
     [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
-    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
+    [-1, 1.6, 1.2, 1, 0, 1, 0.42, 0.75]
   );
 }
 
@@ -330,8 +331,8 @@ function createCentralRing() {
   createObjects(
     ringElements.centralFigures,
     GEOMETRY.centralRing.ir + (GEOMETRY.centralRing.or - GEOMETRY.centralRing.ir) / 2,
-    [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
-    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
+    [0.7, 0.3, 0.6, 0.4, 0.6, 1.2, 0.7, 0.7],
+    [-1.4, 2.4, 1.8, 2, 0, 1.2, 0.59, 1.05]
   );
 }
 
@@ -345,8 +346,8 @@ function createOuterRing() {
   createObjects(
     ringElements.outerFigures,
     GEOMETRY.outerRing.ir + (GEOMETRY.outerRing.or - GEOMETRY.outerRing.ir) / 2,
-    [0.5, 0.2, 0.4, 0.2, 0.4, 1, 0.5, 0.5],
-    [-1, 1.6, 1.2, 1, -0.1, 1, 0.47, 0.75]
+    [0.9, 0.4, 0.8, 0.6, 0.8, 1.4, 0.8, 0.9],
+    [-1.8, 3.2, 2.4, 3, 0, 1.4, 0.67, 1.35]
   );
 }
 
@@ -646,8 +647,6 @@ function init() {
   button.style.background = 'rgba(0,0,0,1)'; // make the button more visible
   document.body.appendChild(button);
 
-  // create buffer scene
-
   const loader = new THREE.TextureLoader();
   skyMap = loader.load(SKY_MAP_PATH);
 
@@ -688,14 +687,15 @@ const keyHandlers = {
   Digit1: movementHandleFactory(['innerFigures', 'innerRing']),
   Digit2: movementHandleFactory(['centralFigures', 'centralRing']),
   Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
+
   KeyD: toggleGlobalLighting(),
-  //KeyP:
-  //KeyS:
   KeyQ: meshHandleFactory('lambert'),
   KeyW: meshHandleFactory('phong'),
   KeyE: meshHandleFactory('toon'),
   KeyR: meshHandleFactory('normal'),
   KeyT: meshHandleFactory('basic'),
+  //KeyP:
+  //KeyS:
 
   // EXTRA
   Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
@@ -719,7 +719,6 @@ function meshHandleFactory(meshType) {
     }
     scene.traverse((object) => {
       if (object.isMesh && object.name !== 'skydome') {
-        console.log(object);
         const material = MATERIAL[object.name][meshType];
         object.material = material;
         material.needsUpdate = true;
@@ -871,7 +870,6 @@ function createRingMesh({ name, x = 0, y = 0, z = 0, parent }) {
  */
 function createParametricObjectMesh({ name, x = 0, y = 0, z = 0, scale, parent, geomFunc }) {
   const material = MATERIAL[name].basic;
-  material.side = THREE.DoubleSide;
   const object = new THREE.Mesh(new ParametricGeometry(geomFunc, 25, 25), material);
   object.position.set(x, y, z);
   object.name = name;
