@@ -125,23 +125,12 @@ const MATERIAL = Object.freeze({
   },
 });
 
-const LIGHT_INTENSITY = Object.freeze({
-  ambient: 1,
-  directional: 2,
-  spotlight: 100,
-  point: 20,
-});
-
-const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
-const OBJECT_SPOTLIGHT_PENUMBRA = 0.3;
-
 const DOME_RADIUS = 64;
 const SPHERE_SEGMENTS = 32;
-
 const SKY_MAP_PATH = './assets/an-optical-poem.jpg';
 
-// box and tetrahedron: w = width (X axis), h = height (Y axis), d = depth (Z axis)
-// cylinder and sphere: r = radius, rx = rotation on X axis, etc.
+// cylinder and ring: r = radius, ir = inner radius, or = outer radius,
+//                    h = height, rx = rotation on X axis
 const GEOMETRY = {
   skyDome: new THREE.SphereGeometry(
     DOME_RADIUS,
@@ -158,6 +147,15 @@ const GEOMETRY = {
   centralRing: { ir: 6, or: 12, h: 4, rx: Math.PI / 2 },
   outerRing: { ir: 12, or: 18, h: 4, rx: Math.PI / 2 },
 };
+
+const LIGHT_INTENSITY = Object.freeze({
+  ambient: 1,
+  directional: 2,
+  spotlight: 100,
+  point: 20,
+});
+const OBJECT_SPOTLIGHT_ANGLE = Math.PI / 9;
+const OBJECT_SPOTLIGHT_PENUMBRA = 0.3;
 
 // degrees of freedom for each profile
 const DEGREES_OF_FREEDOM = {
@@ -207,7 +205,7 @@ let activeCamera = FIXED_CAMERA;
 // textures
 let skyMap;
 
-// for translations and rotations
+// for movements and rotations
 let baseGroup, carouselGroup;
 const ringElements = {};
 const figures = [];
@@ -232,7 +230,7 @@ function createScene() {
   scene = new THREE.Scene();
   scene.background = BACKGROUND;
 
-  baseGroup = createGroup({ y: -21, parent: scene });
+  baseGroup = createGroup({ y: -22, parent: scene });
   carouselGroup = createGroup({ parent: baseGroup });
 
   createLights();
@@ -399,7 +397,7 @@ function createOuterRing() {
   ringElements.outerFigures.movementFlag = true;
 }
 
-function createObjects(ringGroup, radius, scales, yaxis) {
+function createObjects(ringGroup, radius, scales, deltaY) {
   const figs = ['fig1', 'fig2', 'fig3', 'fig4', 'fig5', 'fig6', 'fig7', 'fig8'];
   const angles = [0, 45, 90, 135, 180, 225, 270, 315]; // 8 possible angles
   const funcs = [
@@ -495,7 +493,7 @@ function createObjects(ringGroup, radius, scales, yaxis) {
   figs.forEach((fig) => {
     var i = Math.floor(Math.random() * angles.length);
     const x = Math.cos((angles[i] * Math.PI) / 180) * radius;
-    const y = yaxis.shift();
+    const y = deltaY.shift();
     const z = Math.sin((angles[i] * Math.PI) / 180) * radius;
 
     figures.push(
@@ -632,13 +630,13 @@ function update(timeDelta) {
 
   // lights
   if (toggleObjectSpotlight) {
-    toggleObjectSpotlight = !toggleObjectSpotlight;
+    toggleObjectSpotlight = false;
     objectSpotlights.forEach((spotLight) => {
       spotLight.visible = !spotLight.visible;
     });
   }
   if (toggleMobiusLight) {
-    toggleMobiusLight = !toggleMobiusLight;
+    toggleMobiusLight = false;
     mobiusLights.forEach((light) => {
       light.visible = !light.visible;
     });
@@ -753,17 +751,17 @@ const keyHandlers = {
   Digit2: movementHandleFactory(['centralFigures', 'centralRing']),
   Digit3: movementHandleFactory(['outerFigures', 'outerRing']),
 
-  KeyD: keyActionFactory(() => (directionalLight.visible = !directionalLight.visible)),
+  KeyD: togglerFactory(() => (directionalLight.visible = !directionalLight.visible)),
   KeyQ: materialHandleFactory('lambert'),
   KeyW: materialHandleFactory('phong'),
   KeyE: materialHandleFactory('toon'),
   KeyR: materialHandleFactory('normal'),
   KeyT: materialHandleFactory('basic'),
-  KeyP: keyActionFactory(() => (toggleMobiusLight = !toggleMobiusLight)),
-  KeyS: keyActionFactory(() => (toggleObjectSpotlight = !toggleObjectSpotlight)),
+  KeyP: togglerFactory(() => (toggleMobiusLight = true)),
+  KeyS: togglerFactory(() => (toggleObjectSpotlight = true)),
 
   // EXTRA
-  Digit4: keyActionFactory(() => (toggleActiveCamera = true)),
+  Digit4: togglerFactory(() => (toggleActiveCamera = true)),
 };
 
 function movementHandleFactory(parts) {
@@ -778,18 +776,18 @@ function movementHandleFactory(parts) {
 }
 
 function materialHandleFactory(material) {
-  return keyActionFactory(() => {
+  return togglerFactory(() => {
     activeMaterial = material;
     materialChanged = true;
   });
 }
 
-function keyActionFactory(handler) {
+function togglerFactory(handler) {
   return (event, isKeyDown) => {
     if (!isKeyDown || event.repeat) {
       return;
     }
-    handler(event);
+    handler();
   };
 }
 
